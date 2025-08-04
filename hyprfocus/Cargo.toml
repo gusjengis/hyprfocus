@@ -6,3 +6,4 @@ description = "Hyprland focus logger CLI"
 license = "MIT"
 
 [dependencies]
+chrono = "0.4.40"
