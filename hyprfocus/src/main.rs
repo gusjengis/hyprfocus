@@ -1,3 +1,5 @@
+mod view;
+
 use std::{
     env::{self, home_dir},
     fs::{OpenOptions, create_dir_all, metadata},
@@ -23,7 +25,7 @@ fn main() {
             std::process::exit(1);
         }
         None => {
-            print_usage();
+            view::render_log();
             std::process::exit(1);
         }
     }
