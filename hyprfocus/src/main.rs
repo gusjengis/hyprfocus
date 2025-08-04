@@ -19,6 +19,17 @@ fn main() {
         Some("--resume") => {
             write_to_log("SYSTEM", "resume");
         }
+        Some("-c") => {
+            let class_arg = args.get(2).map(String::as_str);
+            match class_arg {
+                Some(class) => {
+                    view::render_class_log(class);
+                }
+                None => {
+                    println!("Missing class_name argument. Please specify a class.")
+                }
+            }
+        }
         Some(arg) => {
             eprintln!("Unknown argument: {arg}");
             print_usage();
