@@ -1,45 +1,50 @@
-use std::fs;
-use std::os::unix::fs::FileTypeExt;
-use std::path::Path;
-use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::net::{UnixListener, UnixStream};
+use std::{fs::remove_file, path::Path};
 
-use crate::write_to_log;
+use tokio::{
+    io::{AsyncBufReadExt, BufReader},
+    sync::mpsc::Sender,
+};
 
-const SOCKET_PATH: &str = "/tmp/hyprfocus.sock";
+use crate::log_writer::LogMsg;
 
-pub async fn start_socket_listener() -> std::io::Result<()> {
-    // Remove stale socket
+pub async fn start_socket_listener(sender_handle: Sender<LogMsg>) -> std::io::Result<()> {
+    const SOCKET_PATH: &str = "/tmp/hyprfocus.sock";
+
     if Path::new(SOCKET_PATH).exists() {
-        if fs::metadata(SOCKET_PATH)?.file_type().is_socket() {
-            fs::remove_file(SOCKET_PATH)?;
-        }
+        let _ = remove_file(SOCKET_PATH);
     }
-
-    let listener = UnixListener::bind(SOCKET_PATH)?;
+    let listener = tokio::net::UnixListener::bind(SOCKET_PATH)?;
 
     loop {
         let (stream, _) = listener.accept().await?;
-        tokio::spawn(handle_client(stream));
+        let sender_handle_clone = sender_handle.clone();
+        tokio::spawn(async move {
+            let reader = BufReader::new(stream);
+            let mut lines = reader.lines();
+            while let Ok(Some(line)) = lines.next_line().await {
+                let ts = chrono::Local::now().timestamp_millis();
+                match line.trim() {
+                    "idle" => {
+                        let _ = sender_handle_clone
+                            .send(LogMsg::Line {
+                                ts,
+                                class: "SYSTEM".into(),
+                                title: "idle".into(),
+                            })
+                            .await;
+                    }
+                    "resume" => {
+                        let _ = sender_handle_clone
+                            .send(LogMsg::Line {
+                                ts,
+                                class: "SYSTEM".into(),
+                                title: "resume".into(),
+                            })
+                            .await;
+                    }
+                    other => eprintln!("Unknown message: {other}"), // output to file
+                }
+            }
+        });
     }
-}
-
-async fn handle_client(stream: UnixStream) {
-    let reader = BufReader::new(stream);
-    let mut lines = reader.lines();
-
-    while let Ok(Some(line)) = lines.next_line().await {
-        match line.trim() {
-            "idle" => write_to_log("SYSTEM", "idle"),
-            "resume" => write_to_log("SYSTEM", "resume"),
-            _ => eprintln!("Unknown message: {}", line),
-        }
-    }
-}
-
-pub enum SessionState {
-    Active,
-    Idle {
-        buffered: Vec<(String, String)>, // Vec<(class, title)>
-    },
 }

@@ -1,79 +1,89 @@
 mod idle_socket;
+mod log_writer;
 
-use std::{
-    env::home_dir,
-    fs::{OpenOptions, create_dir_all, metadata},
-    io::Write,
-    path::PathBuf,
-};
+use std::time::Duration;
 
-use chrono::Local;
-use hyprland::{async_closure, event_listener::AsyncEventListener};
+use hyprland::event_listener::{AsyncEventListener, WindowEventData};
 use idle_socket::start_socket_listener;
-use tokio::signal;
+use log_writer::{LogMsg, run_log_writer};
+use tokio::{signal, sync::mpsc};
 
 #[tokio::main]
 async fn main() -> hyprland::Result<()> {
-    write_to_log("SYSTEM", "boot");
-    let mut event_listener = AsyncEventListener::new();
+    let (sender_handle, receiver_handle) = mpsc::channel::<LogMsg>(1024);
+    tokio::spawn(run_log_writer(receiver_handle));
 
-    event_listener.add_active_window_changed_handler(async_closure! { move |window_data| {
-            if let Some(data) = window_data {
-            write_to_log(&data.class, &data.title);
+    // boot marker
+    let _ = sender_handle
+        .send(LogMsg::Line {
+            ts: chrono::Local::now().timestamp_millis(),
+            class: "SYSTEM".into(),
+            title: "boot".into(),
+        })
+        .await;
+
+    {
+        let sender_handle_static: &'static mpsc::Sender<LogMsg> =
+            Box::leak(Box::new(sender_handle.clone()));
+
+        tokio::spawn(async move {
+            loop {
+                let mut event_listener = AsyncEventListener::new();
+
+                event_listener.add_active_window_changed_handler(
+                    hyprland::async_closure! { move |window_data: Option<WindowEventData>| {
+                        if let Some(ref data) = window_data {
+                            let class = data.class.clone();
+                            let title = data.title.clone();
+
+                            let _ = sender_handle_static.try_send(LogMsg::Line {
+                                ts: chrono::Local::now().timestamp_millis(),
+                                class,
+                                title,
+                            });
+                        }
+                    }},
+                );
+
+                if let Err(e) = event_listener.start_listener_async().await {
+                    eprintln!("[hypr] listener ended: {e}; retrying in 1s"); // output to file
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                }
             }
-        }
-    });
-
-    let listener_fut = event_listener.start_listener_async();
-    let signal_fut = wait_for_shutdown_signal();
-    tokio::spawn(async {
-        if let Err(e) = start_socket_listener().await {
-            eprintln!("Socket listener failed: {}", e);
-        }
-    });
-
-    tokio::select! {
-        _ = listener_fut => {},
-        _ = signal_fut => {
-            write_to_log("SYSTEM", "shutdown");
-        }
+        });
     }
+
+    {
+        let sender_handle_sock = sender_handle.clone();
+        tokio::spawn(async move {
+            loop {
+                if let Err(e) = start_socket_listener(sender_handle_sock.clone()).await {
+                    eprintln!("[sock] listener failed: {e}; retrying in 3s"); // output to file
+                    tokio::time::sleep(Duration::from_secs(3)).await;
+                }
+            }
+        });
+    }
+
+    wait_for_shutdown_signal().await;
+
+    let _ = sender_handle
+        .send(LogMsg::Line {
+            ts: chrono::Local::now().timestamp_millis(),
+            class: "SYSTEM".into(),
+            title: "shutdown".into(),
+        })
+        .await;
+    let _ = sender_handle.send(LogMsg::Shutdown).await;
 
     Ok(())
 }
 
 async fn wait_for_shutdown_signal() {
-    // Bind the signal stream first so it lives long enough
     let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate()).unwrap();
 
     tokio::select! {
         _ = signal::ctrl_c() => {},
         _ = sigterm.recv() => {},
     }
-}
-
-fn write_to_log(class: &str, title: &str) {
-    let date_str = Local::now().format("%Y-%m-%d").to_string();
-    let mut dir: PathBuf = home_dir().expect("could not get home dir");
-    dir.push(".local/share/hyprfocus");
-    let path = dir.join(format!("{}.csv", date_str));
-
-    create_dir_all(dir).expect("failed to create data directory");
-    let file_exists = metadata(&path).is_ok();
-
-    let timestamp = chrono::Local::now().timestamp_millis();
-    let line = format!("{},{},\"{}\"\n", timestamp, class, title);
-
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)
-        .expect("failed to open log file");
-
-    if !file_exists {
-        writeln!(file, "timestamp,class,title").expect("failed to write header");
-    }
-
-    file.write_all(line.as_bytes())
-        .expect("failed to write to file");
 }
