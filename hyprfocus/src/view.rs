@@ -1,5 +1,7 @@
+use crate::log_parsing::{compute_durations, timeline};
 use chrono::Local;
 use colored::{Color, Colorize};
+use std::fmt::Write;
 use std::{
     collections::HashMap,
     env::home_dir,
@@ -7,8 +9,6 @@ use std::{
     path::PathBuf,
 };
 use terminal_size::Width;
-
-use crate::log_parsing::{compute_durations, timeline};
 
 pub fn daily_log_path(date_str: &str) -> Option<PathBuf> {
     let mut dir: PathBuf = home_dir().expect("could not get home dir");
@@ -39,9 +39,10 @@ pub fn render_log(class_arg: &str) {
                 }
 
                 let colors = key_to_color_map(&durations);
+                let labels: Vec<String> = durations.iter().map(|(s, _)| s.clone()).collect();
                 print_header(&date_str);
-                render_timeline(&colors, class_arg);
-                print_table(durations, total, colors);
+                render_timeline(&colors, class_arg, labels);
+                print_table(durations, total, &colors);
             }
             Err(e) => {
                 eprintln!("Failed to compute durations: {e:?}");
@@ -50,23 +51,94 @@ pub fn render_log(class_arg: &str) {
     };
 }
 
-pub fn render_timeline(colors: &HashMap<String, Color>, class_arg: &str) {
+const STRIKE_ON: &str = "\x1b[9m";
+const STRIKE_OFF: &str = "\x1b[29m";
+const FANCY_TIMELINE: bool = true;
+
+pub fn render_timeline(colors: &HashMap<String, Color>, _class_arg: &str, labels: Vec<String>) {
     let date_str = Local::now().format("%Y-%m-%d").to_string();
     if let Some(path) = daily_log_path(&date_str) {
         let width = terminal_width();
-        let sections = timeline(path, width, class_arg);
-        let mut timeline_string = String::from("");
 
-        for dominant_class in sections {
-            if let Some(color) = colors.get(&dominant_class) {
-                if color == &Color::Black {
-                    timeline_string = format!("{timeline_string}{}", "—".white());
-                } else {
-                    timeline_string = format!("{timeline_string}{}", "█".color(*color));
+        for label in labels {
+            if label.len() == 0 {
+                continue;
+            }
+            // println!("{}", key);
+            let sections = timeline(&path, width, &label);
+            let mut timeline_string = String::from("");
+
+            for section_data in sections {
+                if let Some(color) = colors.get(&label) {
+                    let ch = choose_character(section_data).to_string();
+                    let glyph = if *color == Color::Black {
+                        // plain em dash (or space) for gaps
+                        if FANCY_TIMELINE {
+                            " ".strikethrough().bold().white().to_string()
+                        } else {
+                            "—".white().to_string()
+                        }
+                    } else {
+                        format!("{}", ch.color(*color))
+                    };
+
+                    write!(&mut timeline_string, "{}{}{}", STRIKE_ON, glyph, STRIKE_OFF).unwrap();
                 }
             }
+            println!("{timeline_string}\n");
         }
-        println!("{timeline_string}");
+    }
+}
+
+fn choose_character(section_data: (String, i64, i64, bool, bool)) -> char {
+    let width = terminal_width();
+    let ms_per_day = 86400000;
+    let ms_per_section = ms_per_day / width as i64;
+    let fullness = section_data.2 as f64 / ms_per_section as f64;
+    if FANCY_TIMELINE {
+        if section_data.3 && section_data.4 {
+            // there is activity near both the left and right side of a section
+            return '█';
+        } else if section_data.3 {
+            // there is activity near the left side of a section
+            return match fullness {
+                f64::MIN..=0.00 => ' ',
+                0.0..=0.1250000 => '▏',
+                0.125..=0.25000 => '▎',
+                0.25..=0.375000 => '▍',
+                0.375..=0.50000 => '▌',
+                0.5..=0.6250000 => '▋',
+                0.625..=0.75000 => '▊',
+                0.75..=f64::MAX => '█',
+                _ => '—',
+            };
+        } else if section_data.4 {
+            // there is activity near the right side of a section
+            return match fullness {
+                f64::MIN..=0.00 => ' ',
+                0.0..=0.1250000 => '🮇',
+                0.125..=0.25000 => '🮈',
+                0.25..=0.375000 => '▐',
+                0.375..=0.50000 => '🮉',
+                0.5..=0.6250000 => '🮊',
+                0.625..=0.75000 => '🮋',
+                0.75..=f64::MAX => '█',
+                _ => ' ',
+            };
+        } else {
+            return match fullness {
+                f64::MIN..=0.00 => ' ',
+                0.00..=0.333333 => '│',
+                0.333333..=0.66 => '┃',
+                0.66..=f64::MAX => '█',
+                _ => ' ',
+            };
+        }
+    } else {
+        if fullness == 0.0 {
+            return ' ';
+        }
+        return '█';
     }
 }
 
@@ -89,9 +161,10 @@ fn print_header(date_str: &str) {
     println!("{}╭{}╮", pad, "─".repeat(inner_width));
     println!("{}│ {} │", pad, date_str);
     println!("{}╰{}╯", pad, "─".repeat(inner_width));
+    println!("\n");
 }
 
-fn print_table(rows: Vec<(String, u32)>, total: u32, colors: HashMap<String, Color>) {
+fn print_table(rows: Vec<(String, u32)>, total: u32, colors: &HashMap<String, Color>) {
     let mut max_class_width = rows.iter().map(|(class, _)| class.len()).max().unwrap_or(0);
 
     let max_string_length = terminal_width() - 20;
@@ -100,7 +173,7 @@ fn print_table(rows: Vec<(String, u32)>, total: u32, colors: HashMap<String, Col
     let total_width = max_class_width + 10 + 8 + 2; // +2 for the spaces between columns
     let left_padding = (terminal_width() - total_width) / 2;
 
-    println!("\n");
+    println!("");
 
     let mut total_percentage = 0.0;
     let mut total_duration = 0;

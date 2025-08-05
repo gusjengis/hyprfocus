@@ -102,7 +102,11 @@ fn add_interval_to_map(
     }
 }
 
-pub fn timeline(path: PathBuf, width: usize, class_arg: &str) -> Vec<String> {
+pub fn timeline(
+    path: &PathBuf,
+    width: usize,
+    class_arg: &str,
+) -> Vec<(String, i64, i64, bool, bool)> {
     let ms_per_day = 86400000;
     let ms_per_section = ms_per_day / width as i64;
     let midnight = Local::now()
@@ -115,7 +119,8 @@ pub fn timeline(path: PathBuf, width: usize, class_arg: &str) -> Vec<String> {
         .with_nanosecond(0)
         .unwrap();
     let starting_ms = midnight.timestamp_millis();
-    let mut sections: Vec<(String, i64)> = vec![(String::from(""), 0); width];
+    let mut sections: Vec<(String, i64, i64, bool, bool)> =
+        vec![(String::from(""), 0, 0, false, false); width];
 
     let mut rdr = Reader::from_path(path).unwrap();
 
@@ -182,7 +187,8 @@ pub fn timeline(path: PathBuf, width: usize, class_arg: &str) -> Vec<String> {
         class_arg,
         &mut sections,
     );
-    sections.into_iter().map(|(s, _)| s).collect()
+
+    sections
 }
 
 fn section_index(starting_ms: i64, ms_per_section: i64, timestamp: i64) -> usize {
@@ -207,7 +213,7 @@ fn assign_interval_to_section(
     starting_ms: i64,
     ms_per_section: i64,
     class_arg: &str,
-    sections: &mut Vec<(String, i64)>,
+    sections: &mut Vec<(String, i64, i64, bool, bool)>,
 ) {
     if let (Some(start), Some(class_name), Some(title)) = (last_timestamp, last_class, last_title) {
         if class_arg == "" || class_arg == "*" || class_arg == class_name {
@@ -217,7 +223,15 @@ fn assign_interval_to_section(
                 let section_start = starting_ms + ms_per_section * i as i64;
                 let section_end = starting_ms + ms_per_section * (i as i64 + 1);
                 let contribution = section_end.min(timestamp) - section_start.max(start);
+                let edge_detection_padding = ms_per_section / 10;
+                if section_start + edge_detection_padding >= start {
+                    sections[i].3 = true;
+                }
+                if section_end - edge_detection_padding <= timestamp {
+                    sections[i].4 = true;
+                }
                 let key = key(class_arg, class_name, title);
+                sections[i].2 += contribution;
                 if sections[i].0 == key {
                     sections[i].1 += contribution;
                 } else {
