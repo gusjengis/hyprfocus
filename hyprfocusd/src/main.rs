@@ -1,3 +1,5 @@
+mod idle_socket;
+
 use std::{
     env::home_dir,
     fs::{OpenOptions, create_dir_all, metadata},
@@ -7,6 +9,7 @@ use std::{
 
 use chrono::Local;
 use hyprland::{async_closure, event_listener::AsyncEventListener};
+use idle_socket::start_socket_listener;
 use tokio::signal;
 
 #[tokio::main]
@@ -23,6 +26,11 @@ async fn main() -> hyprland::Result<()> {
 
     let listener_fut = event_listener.start_listener_async();
     let signal_fut = wait_for_shutdown_signal();
+    tokio::spawn(async {
+        if let Err(e) = start_socket_listener().await {
+            eprintln!("Socket listener failed: {}", e);
+        }
+    });
 
     tokio::select! {
         _ = listener_fut => {},
@@ -54,7 +62,7 @@ fn write_to_log(class: &str, title: &str) {
     let file_exists = metadata(&path).is_ok();
 
     let timestamp = chrono::Local::now().timestamp_millis();
-    let line = format!("{},{},{}\n", timestamp, class, title);
+    let line = format!("{},{},\"{}\"\n", timestamp, class, title);
 
     let mut file = OpenOptions::new()
         .create(true)
