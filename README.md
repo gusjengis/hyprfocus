@@ -6,7 +6,7 @@ The hyprfocus CLI will use these logs to generate reports on your activity.
 
 ## Usage
 
-todo!()
+hyprfocus [--titles | -t | --class CLASS_NAME | -c CLASS_NAME | --idle | --resume]
 
 ## Configuration
 
@@ -25,3 +25,9 @@ listener {
 }
 ```
 Accurate focus data requires that hyprfocus is informed of idle events. Above is an example of how to set that up using hypridle
+
+## Todo
+
+- [ ] Better Usage/Help text
+- [ ] Multi Day Reports
+- [ ] Arbitrary Interval Reports
