@@ -15,7 +15,7 @@ fn main() {
             let class_arg = args.get(2).map(String::as_str);
             match class_arg {
                 Some(class) => {
-                    view::render_log(class);
+                    view::render_log(class, false);
                 }
                 None => {
                     println!("Missing class_name argument. Please specify a class.")
@@ -24,7 +24,11 @@ fn main() {
             std::process::exit(1);
         }
         Some("--titles") | Some("-t") => {
-            view::render_log("*");
+            view::render_log("*", false);
+            std::process::exit(1);
+        }
+        Some("--multi") | Some("-m") => {
+            view::render_log("", true);
             std::process::exit(1);
         }
         Some(arg) => {
@@ -33,7 +37,7 @@ fn main() {
             std::process::exit(1);
         }
         None => {
-            view::render_log("");
+            view::render_log("", false);
             std::process::exit(1);
         }
     }

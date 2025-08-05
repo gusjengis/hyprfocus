@@ -32,7 +32,6 @@ Accurate focus data requires that hyprfocus is informed of idle events. Above is
 - [ ] Multi Day Reports
 - [ ] Arbitrary Interval Reports
 - [ ] Sensible scheme for handling multiple arguments
-- [ ] Add argument for mult-timeline mode
 #### Configuration
 - [ ] hyprfocus.conf
     - [ ] display settings

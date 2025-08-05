@@ -106,6 +106,7 @@ pub fn timeline(
     path: &PathBuf,
     width: usize,
     class_arg: &str,
+    title_arg: &str,
 ) -> Vec<(String, i64, i64, bool, bool)> {
     let ms_per_day = 86400000;
     let ms_per_section = ms_per_day / width as i64;
@@ -154,6 +155,7 @@ pub fn timeline(
                         starting_ms,
                         ms_per_section,
                         class_arg,
+                        title_arg,
                         &mut sections,
                     );
                     last_timestamp = None;
@@ -168,6 +170,7 @@ pub fn timeline(
                 starting_ms,
                 ms_per_section,
                 class_arg,
+                title_arg,
                 &mut sections,
             );
             last_timestamp = Some(timestamp);
@@ -185,6 +188,7 @@ pub fn timeline(
         starting_ms,
         ms_per_section,
         class_arg,
+        title_arg,
         &mut sections,
     );
 
@@ -213,10 +217,15 @@ fn assign_interval_to_section(
     starting_ms: i64,
     ms_per_section: i64,
     class_arg: &str,
+    title_arg: &str,
     sections: &mut Vec<(String, i64, i64, bool, bool)>,
 ) {
     if let (Some(start), Some(class_name), Some(title)) = (last_timestamp, last_class, last_title) {
-        if class_arg == "" || class_arg == "*" || class_arg == class_name {
+        if class_arg == ""
+            || class_arg == "*" && title_arg == ""
+            || class_arg == "*" && title_arg == title
+            || class_arg == class_name
+        {
             let start_index = section_index(starting_ms, ms_per_section, start);
             let end_index = section_index(starting_ms, ms_per_section, timestamp);
             for i in start_index..end_index + 1 {

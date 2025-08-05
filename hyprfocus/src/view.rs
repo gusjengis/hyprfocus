@@ -24,7 +24,7 @@ pub fn daily_log_path(date_str: &str) -> Option<PathBuf> {
     return Some(path);
 }
 
-pub fn render_log(class_arg: &str) {
+pub fn render_log(class_arg: &str, multi_timeline: bool) {
     let date_str = Local::now().format("%Y-%m-%d").to_string();
     if let Some(path) = daily_log_path(&date_str) {
         match compute_durations(path, class_arg) {
@@ -41,7 +41,7 @@ pub fn render_log(class_arg: &str) {
                 let colors = key_to_color_map(&durations);
                 let labels: Vec<String> = durations.iter().map(|(s, _)| s.clone()).collect();
                 print_header(&date_str);
-                render_timeline(&colors, class_arg, labels);
+                render_timelines(&colors, class_arg, multi_timeline, labels);
                 print_table(durations, total, &colors);
             }
             Err(e) => {
@@ -55,38 +55,69 @@ const STRIKE_ON: &str = "\x1b[9m";
 const STRIKE_OFF: &str = "\x1b[29m";
 const FANCY_TIMELINE: bool = true;
 
-pub fn render_timeline(colors: &HashMap<String, Color>, _class_arg: &str, labels: Vec<String>) {
+pub fn render_timelines(
+    colors: &HashMap<String, Color>,
+    class_arg: &str,
+    multi_timeline: bool,
+    labels: Vec<String>,
+) {
     let date_str = Local::now().format("%Y-%m-%d").to_string();
     if let Some(path) = daily_log_path(&date_str) {
         let width = terminal_width();
-
-        for label in labels {
-            if label.len() == 0 {
-                continue;
-            }
-            // println!("{}", key);
-            let sections = timeline(&path, width, &label);
-            let mut timeline_string = String::from("");
-
-            for section_data in sections {
-                if let Some(color) = colors.get(&label) {
-                    let ch = choose_character(section_data).to_string();
-                    let glyph = if *color == Color::Black {
-                        // plain em dash (or space) for gaps
-                        if FANCY_TIMELINE {
-                            " ".strikethrough().bold().white().to_string()
-                        } else {
-                            "—".white().to_string()
-                        }
-                    } else {
-                        format!("{}", ch.color(*color))
-                    };
-
-                    write!(&mut timeline_string, "{}{}{}", STRIKE_ON, glyph, STRIKE_OFF).unwrap();
+        if !multi_timeline {
+            render_timeline(&date_str, colors, &class_arg, &"", multi_timeline);
+        } else {
+            for label in labels {
+                if label.len() == 0 {
+                    continue;
                 }
+                let mut title = "";
+                if class_arg == "*" {
+                    title = label.split_once(':').unwrap().1;
+                }
+                render_timeline(&date_str, colors, &label, &title, multi_timeline);
             }
-            println!("{timeline_string}\n");
+            // render_timeline(&date_str, colors, &class_arg, &"", false);
         }
+    }
+}
+
+pub fn render_timeline(
+    date_str: &str,
+    colors: &HashMap<String, Color>,
+    class_arg: &str,
+    title_arg: &str,
+    multi_timeline: bool,
+) {
+    let date_str = Local::now().format("%Y-%m-%d").to_string();
+    if let Some(path) = daily_log_path(&date_str) {
+        let width = terminal_width();
+        // println!("{}", key);
+        let sections = timeline(&path, width, &class_arg, &title_arg);
+        let mut timeline_string = String::from("");
+
+        for section_data in sections {
+            let key = match multi_timeline {
+                false => &section_data.0,
+                true => class_arg,
+            };
+            if let Some(color) = colors.get(key) {
+                let ch = choose_character(section_data).to_string();
+                let glyph = if *color == Color::Black {
+                    // plain em dash (or space) for gaps
+                    if FANCY_TIMELINE {
+                        " ".strikethrough().bold().white().to_string()
+                    } else {
+                        "—".white().to_string()
+                    }
+                } else {
+                    format!("{}", ch.color(*color))
+                };
+
+                write!(&mut timeline_string, "{}{}{}", STRIKE_ON, glyph, STRIKE_OFF).unwrap();
+            }
+        }
+        println!("{timeline_string}\n");
     }
 }
 
