@@ -23,7 +23,7 @@ fn main() {
             }
             std::process::exit(1);
         }
-        Some("--titles") | Some("-t") => {
+        Some("--full") | Some("-f") => {
             view::render_log("*", false);
             std::process::exit(1);
         }
@@ -45,6 +45,6 @@ fn main() {
 
 fn print_usage() {
     println!(
-        "Usage: hyprfocus [--titles | -t | --class CLASS_NAME | -c CLASS_NAME | --idle | --resume]"
+        "Usage: hyprfocus [ --full | -f | --multi | -m | --class CLASS_NAME | -c CLASS_NAME | --idle | --resume]"
     );
 }
