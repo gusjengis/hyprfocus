@@ -1,8 +1,9 @@
 mod daemon_commands;
 mod log_parsing;
+mod log_reader;
 mod view;
 
-use chrono::Local;
+use chrono::{Local, TimeDelta};
 use daemon_commands::send_command;
 use std::env;
 use view::render_log;
@@ -83,7 +84,13 @@ fn main() {
 
 fn print_usage() {
     println!(
-        "Usage: hyprfocus [ --help | -h | --full | -f | --multi | -m | --class CLASS_NAME | -c CLASS_NAME | --idle | --resume]"
+        "Usage: hyprfocus\n
+        [ --help | -h ]\n
+        [ --full | -f ]\n
+        [ --multi | -m ]\n
+        [ --days DAY_COUNT | -d DAY_COUNT ]\n
+        [ --class CLASS_NAME | -c CLASS_NAME ]\n
+        [ --idle | --resume]"
     );
 }
 
@@ -136,8 +143,22 @@ impl Interval {
     }
     pub fn set_days(&mut self, value: u64) {
         match self {
-            Interval::Days { days } => *days = value,
-            _ => {}
+            Interval::Days { days } => *days = value.max(1),
+        }
+    }
+
+    pub fn date_str(&self) -> String {
+        match *self {
+            Interval::Days { days } => {
+                let end = Local::now().date_naive();
+                let start = end - TimeDelta::days((days - 1) as i64);
+
+                if days == 1 {
+                    end.format("%Y-%m-%d").to_string()
+                } else {
+                    format!("{} - {}", start.format("%Y-%m-%d"), end.format("%Y-%m-%d"))
+                }
+            }
         }
     }
 }

@@ -1,24 +1,25 @@
-use std::{collections::HashMap, error::Error, path::PathBuf};
+use std::{collections::HashMap, error::Error};
 
-use chrono::{Local, Timelike};
-use csv::Reader;
+use chrono::{Duration, Local, Timelike};
 
-use crate::Settings;
+use crate::{Settings, log_reader::LogReader};
+
+pub const MS_PER_DAY: i64 = 86400000;
 
 pub fn compute_durations(
-    path: PathBuf,
+    reader: &mut LogReader,
     settings: &Settings,
 ) -> Result<(Vec<(String, u64)>, u64), Box<dyn Error>> {
     let mut map: HashMap<String, u64> = HashMap::new();
-    let mut rdr = Reader::from_path(path)?;
 
     let mut total = 0;
     let mut last_timestamp = None;
     let mut last_class: Option<String> = None;
     let mut last_title: Option<String> = None;
 
-    for result in rdr.records() {
-        let record = result?;
+    let _ = reader.reset();
+    for row in reader {
+        let record = row?;
         let timestamp: u64 = (record[0].parse::<i64>()?) as u64;
         let class = record[1].to_string();
         let title = record[2].to_string();
@@ -105,34 +106,37 @@ fn add_interval_to_map(
 }
 
 pub fn timeline(
-    path: &PathBuf,
+    reader: &mut LogReader,
     width: usize,
     settings: &Settings,
     label: Option<&String>,
 ) -> Vec<(String, i64, i64, bool, bool)> {
-    let ms_per_day = 86400000;
-    let ms_per_section = ms_per_day / width as i64;
-    let midnight = Local::now()
-        .with_hour(0)
-        .unwrap()
-        .with_minute(0)
-        .unwrap()
-        .with_second(0)
-        .unwrap()
-        .with_nanosecond(0)
-        .unwrap();
-    let starting_ms = midnight.timestamp_millis();
+    let (ms_per_section, starting_ms) = match settings.interval {
+        crate::Interval::Days { days } => (
+            days as i64 * MS_PER_DAY / width as i64,
+            (Local::now()
+                .with_hour(0)
+                .unwrap()
+                .with_minute(0)
+                .unwrap()
+                .with_second(0)
+                .unwrap()
+                .with_nanosecond(0)
+                .unwrap()
+                - Duration::days(days as i64 - 1))
+            .timestamp_millis(),
+        ),
+    };
     let mut sections: Vec<(String, i64, i64, bool, bool)> =
         vec![(String::from(""), 0, 0, false, false); width];
-
-    let mut rdr = Reader::from_path(path).unwrap();
 
     let mut last_timestamp: Option<i64> = None;
     let mut last_class: Option<String> = None;
     let mut last_title: Option<String> = None;
 
-    for result in rdr.records() {
-        let record = result.unwrap();
+    let _ = reader.reset();
+    for row in reader {
+        let record = row.unwrap();
         let timestamp: i64 = record[0].parse().unwrap();
         let class = record[1].to_string();
         let title = record[2].to_string();

@@ -6,7 +6,13 @@ The hyprfocus CLI will use these logs to generate reports on your activity.
 
 ## Usage
 
-hyprfocus [--titles | -t | --class CLASS_NAME | -c CLASS_NAME | --idle | --resume]
+Usage: hyprfocus
+[ --help | -h ]
+[ --full | -f ]
+[ --multi | -m ]
+[ --days DAY_COUNT | -d DAY_COUNT ]
+[ --class CLASS_NAME | -c CLASS_NAME ]
+[ --idle | --resume]
 
 ## Configuration
 
@@ -29,11 +35,11 @@ Accurate focus data requires that hyprfocus is informed of idle events. Above is
 ## Todo
 
 - [ ] Better Usage/Help text
-- [ ] Multi Day Reports
 - [ ] Arbitrary Interval Reports
 - [ ] Handle table formatting for long durations and extra wide characters
 - [ ] Output all errors to a log file (~/.local/share/hyprfocus/hyprfocus.log)
 - [ ] Implement settings and args for cutoffs for long reports
+- [ ] Figure out why logs stopped showing up while the daemon was still running on 8/5/25
 #### Configuration
 - [ ] hyprfocus.conf
     - [ ] display settings

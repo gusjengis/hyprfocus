@@ -1,34 +1,15 @@
 use crate::Settings;
-use crate::log_parsing::{compute_durations, timeline};
-use chrono::Local;
+use crate::log_parsing::{MS_PER_DAY, compute_durations, timeline};
+use crate::log_reader::LogReader;
 use colored::{Color, Colorize};
+use std::collections::HashMap;
 use std::fmt::Write;
-use std::{
-    collections::HashMap,
-    env::home_dir,
-    fs::{create_dir_all, metadata},
-    path::PathBuf,
-};
 use terminal_size::Width;
 
-pub fn daily_log_path(date_str: &str) -> Option<PathBuf> {
-    let mut dir: PathBuf = home_dir().expect("could not get home dir");
-    dir.push(".local/share/hyprfocus");
-    let path = dir.join(format!("{}.csv", date_str));
-
-    create_dir_all(dir).expect("failed to create data directory");
-    let file_exists = metadata(&path).is_ok();
-    if !file_exists {
-        println!("{} not found, start hyprfocusd.", path.to_string_lossy());
-        return None;
-    }
-    return Some(path);
-}
-
 pub fn render_log(settings: &Settings) {
-    let date_str = Local::now().format("%Y-%m-%d").to_string();
-    if let Some(path) = daily_log_path(&date_str) {
-        match compute_durations(path, settings) {
+    let mut reader = LogReader::new(settings);
+    if !reader.is_empty() {
+        match compute_durations(&mut reader, settings) {
             Ok((durations, total)) => {
                 if durations.is_empty() {
                     if &settings.class_arg == "" {
@@ -41,18 +22,24 @@ pub fn render_log(settings: &Settings) {
 
                 let colors = key_to_color_map(&durations);
                 let labels: Vec<String> = durations.iter().map(|(s, _)| s.clone()).collect();
-                print_header(&date_str);
-                render_timelines(&colors, labels, settings);
+                print_header(settings);
+                render_timelines(&mut reader, &colors, labels, settings);
                 print_table(durations, total, &colors);
             }
             Err(e) => {
                 eprintln!("Failed to compute durations: {e:?}");
             }
         }
-    };
+    } else {
+        println!(
+            "Log files not found in the following interval.\n{:?}",
+            settings.interval
+        );
+    }
 }
 
-fn print_header(date_str: &str) {
+fn print_header(settings: &Settings) {
+    let date_str = settings.interval.date_str();
     let term_width = terminal_width();
 
     let inner_width = date_str.len() + 2;
@@ -77,10 +64,14 @@ const STRIKE_OFF: &str = "\x1b[29m";
 const FANCY_TIMELINE: bool = true;
 const CUTOFF: usize = usize::MAX; // not doing anything but the setting is here
 
-pub fn render_timelines(colors: &HashMap<String, Color>, labels: Vec<String>, settings: &Settings) {
-    let date_str = Local::now().format("%Y-%m-%d").to_string();
+pub fn render_timelines(
+    reader: &mut LogReader,
+    colors: &HashMap<String, Color>,
+    labels: Vec<String>,
+    settings: &Settings,
+) {
     if !settings.multi_timeline {
-        render_timeline(&date_str, colors, settings, None);
+        render_timeline(reader, colors, settings, None);
     } else {
         let mut count = 0;
         for label in labels {
@@ -90,51 +81,50 @@ pub fn render_timelines(colors: &HashMap<String, Color>, labels: Vec<String>, se
             if count >= CUTOFF {
                 break;
             }
-            render_timeline(&date_str, colors, settings, Some(&label));
+            render_timeline(reader, colors, settings, Some(&label));
             count += 1;
         }
     }
 }
 
 pub fn render_timeline(
-    date_str: &str,
+    reader: &mut LogReader,
     colors: &HashMap<String, Color>,
     settings: &Settings,
     label: Option<&String>,
 ) {
-    if let Some(path) = daily_log_path(&date_str) {
-        let width = terminal_width();
-        let sections = timeline(&path, width, &settings, label);
-        let mut timeline_string = String::from("");
+    let width = terminal_width();
+    let sections = timeline(reader, width, &settings, label);
+    let mut timeline_string = String::from("");
 
-        for section_data in sections {
-            let key = match settings.multi_timeline {
-                false => &section_data.0,
-                true => label.unwrap(),
-            };
-            if let Some(color) = colors.get(key) {
-                let ch = choose_character(section_data).to_string();
-                let glyph = if *color == Color::Black {
-                    if FANCY_TIMELINE {
-                        " ".strikethrough().bold().white().to_string()
-                    } else {
-                        "—".white().to_string()
-                    }
+    for section_data in sections {
+        let key = match settings.multi_timeline {
+            false => &section_data.0,
+            true => label.unwrap(),
+        };
+        if let Some(color) = colors.get(key) {
+            let ch = choose_character(section_data, settings).to_string();
+            let glyph = if *color == Color::Black {
+                if FANCY_TIMELINE {
+                    " ".strikethrough().bold().white().to_string()
                 } else {
-                    format!("{}", ch.color(*color))
-                };
+                    "—".white().to_string()
+                }
+            } else {
+                format!("{}", ch.color(*color))
+            };
 
-                write!(&mut timeline_string, "{}{}{}", STRIKE_ON, glyph, STRIKE_OFF).unwrap();
-            }
+            write!(&mut timeline_string, "{}{}{}", STRIKE_ON, glyph, STRIKE_OFF).unwrap();
         }
-        println!("{timeline_string}\n");
     }
+    println!("{timeline_string}\n");
 }
 
-fn choose_character(section_data: (String, i64, i64, bool, bool)) -> char {
+fn choose_character(section_data: (String, i64, i64, bool, bool), settings: &Settings) -> char {
     let width = terminal_width();
-    let ms_per_day = 86400000.0;
-    let ms_per_section = ms_per_day / width as f64;
+    let ms_per_section = match settings.interval {
+        crate::Interval::Days { days } => (days as i64 * MS_PER_DAY) as f64 / width as f64,
+    };
     let fullness = section_data.2 as f64 / ms_per_section as f64;
     if FANCY_TIMELINE {
         if section_data.3 && section_data.4 {
