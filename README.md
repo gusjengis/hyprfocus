@@ -6,13 +6,13 @@ The hyprfocus CLI will use these logs to generate reports on your activity.
 
 ## Usage
 
-Usage: hyprfocus
-[ --help | -h ]
-[ --full | -f ]
-[ --multi | -m ]
-[ --days DAY_COUNT | -d DAY_COUNT ]
-[ --class CLASS_NAME | -c CLASS_NAME ]
-[ --idle | --resume]
+Usage: hyprfocus  
+[ --help | -h ]  
+[ --full | -f ]  
+[ --multi | -m ]  
+[ --days DAY_COUNT | -d DAY_COUNT ]  
+[ --class CLASS_NAME | -c CLASS_NAME ]  
+[ --idle | --resume]  
 
 ## Configuration
 
