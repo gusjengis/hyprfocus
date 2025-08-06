@@ -31,7 +31,9 @@ Accurate focus data requires that hyprfocus is informed of idle events. Above is
 - [ ] Better Usage/Help text
 - [ ] Multi Day Reports
 - [ ] Arbitrary Interval Reports
-- [ ] Sensible scheme for handling multiple arguments
+- [ ] Handle table formatting for long durations and extra wide characters
+- [ ] Output all errors to a log file (~/.local/share/hyprfocus/hyprfocus.log)
+- [ ] Implement settings and args for cutoffs for long reports
 #### Configuration
 - [ ] hyprfocus.conf
     - [ ] display settings
@@ -39,6 +41,8 @@ Accurate focus data requires that hyprfocus is informed of idle events. Above is
         - [ ] characters
         - [ ] colors
         - [ ] layout
+        - [ ] minimum duration to display
+        - [ ] show labels next to timelines in multi
     - [ ] default argument settings
     - [ ] ignore settings
     - [ ] category settings

@@ -1,3 +1,4 @@
+use crate::Settings;
 use crate::log_parsing::{compute_durations, timeline};
 use chrono::Local;
 use colored::{Color, Colorize};
@@ -24,16 +25,16 @@ pub fn daily_log_path(date_str: &str) -> Option<PathBuf> {
     return Some(path);
 }
 
-pub fn render_log(class_arg: &str, multi_timeline: bool) {
+pub fn render_log(settings: &Settings) {
     let date_str = Local::now().format("%Y-%m-%d").to_string();
     if let Some(path) = daily_log_path(&date_str) {
-        match compute_durations(path, class_arg) {
+        match compute_durations(path, settings) {
             Ok((durations, total)) => {
                 if durations.is_empty() {
-                    if class_arg == "" {
+                    if &settings.class_arg == "" {
                         println!("Empty log.");
                     } else {
-                        println!("Class \"{class_arg}\" not found in log.");
+                        println!("Class \"{}\" not found in log.", &settings.class_arg);
                     }
                     return;
                 }
@@ -41,7 +42,7 @@ pub fn render_log(class_arg: &str, multi_timeline: bool) {
                 let colors = key_to_color_map(&durations);
                 let labels: Vec<String> = durations.iter().map(|(s, _)| s.clone()).collect();
                 print_header(&date_str);
-                render_timelines(&colors, class_arg, multi_timeline, labels);
+                render_timelines(&colors, labels, settings);
                 print_table(durations, total, &colors);
             }
             Err(e) => {
@@ -51,33 +52,46 @@ pub fn render_log(class_arg: &str, multi_timeline: bool) {
     };
 }
 
+fn print_header(date_str: &str) {
+    let term_width = terminal_width();
+
+    let inner_width = date_str.len() + 2;
+    let box_width = inner_width + 2;
+
+    if box_width > term_width {
+        println!("{}", date_str);
+        return;
+    }
+
+    let start_column = (term_width - box_width) / 2;
+    let pad = " ".repeat(start_column);
+
+    println!("{}╭{}╮", pad, "─".repeat(inner_width));
+    println!("{}│ {} │", pad, date_str);
+    println!("{}╰{}╯", pad, "─".repeat(inner_width));
+    println!("\n");
+}
+
 const STRIKE_ON: &str = "\x1b[9m";
 const STRIKE_OFF: &str = "\x1b[29m";
 const FANCY_TIMELINE: bool = true;
+const CUTOFF: usize = usize::MAX; // not doing anything but the setting is here
 
-pub fn render_timelines(
-    colors: &HashMap<String, Color>,
-    class_arg: &str,
-    multi_timeline: bool,
-    labels: Vec<String>,
-) {
+pub fn render_timelines(colors: &HashMap<String, Color>, labels: Vec<String>, settings: &Settings) {
     let date_str = Local::now().format("%Y-%m-%d").to_string();
-    if let Some(path) = daily_log_path(&date_str) {
-        let width = terminal_width();
-        if !multi_timeline {
-            render_timeline(&date_str, colors, &class_arg, &"", multi_timeline);
-        } else {
-            for label in labels {
-                if label.len() == 0 {
-                    continue;
-                }
-                let mut title = "";
-                if class_arg == "*" {
-                    title = label.split_once(':').unwrap().1;
-                }
-                render_timeline(&date_str, colors, &label, &title, multi_timeline);
+    if !settings.multi_timeline {
+        render_timeline(&date_str, colors, settings, None);
+    } else {
+        let mut count = 0;
+        for label in labels {
+            if label.len() == 0 {
+                continue;
             }
-            // render_timeline(&date_str, colors, &class_arg, &"", false);
+            if count >= CUTOFF {
+                break;
+            }
+            render_timeline(&date_str, colors, settings, Some(&label));
+            count += 1;
         }
     }
 }
@@ -85,26 +99,22 @@ pub fn render_timelines(
 pub fn render_timeline(
     date_str: &str,
     colors: &HashMap<String, Color>,
-    class_arg: &str,
-    title_arg: &str,
-    multi_timeline: bool,
+    settings: &Settings,
+    label: Option<&String>,
 ) {
-    let date_str = Local::now().format("%Y-%m-%d").to_string();
     if let Some(path) = daily_log_path(&date_str) {
         let width = terminal_width();
-        // println!("{}", key);
-        let sections = timeline(&path, width, &class_arg, &title_arg);
+        let sections = timeline(&path, width, &settings, label);
         let mut timeline_string = String::from("");
 
         for section_data in sections {
-            let key = match multi_timeline {
+            let key = match settings.multi_timeline {
                 false => &section_data.0,
-                true => class_arg,
+                true => label.unwrap(),
             };
             if let Some(color) = colors.get(key) {
                 let ch = choose_character(section_data).to_string();
                 let glyph = if *color == Color::Black {
-                    // plain em dash (or space) for gaps
                     if FANCY_TIMELINE {
                         " ".strikethrough().bold().white().to_string()
                     } else {
@@ -123,8 +133,8 @@ pub fn render_timeline(
 
 fn choose_character(section_data: (String, i64, i64, bool, bool)) -> char {
     let width = terminal_width();
-    let ms_per_day = 86400000;
-    let ms_per_section = ms_per_day / width as i64;
+    let ms_per_day = 86400000.0;
+    let ms_per_section = ms_per_day / width as f64;
     let fullness = section_data.2 as f64 / ms_per_section as f64;
     if FANCY_TIMELINE {
         if section_data.3 && section_data.4 {
@@ -173,29 +183,7 @@ fn choose_character(section_data: (String, i64, i64, bool, bool)) -> char {
     }
 }
 
-fn print_header(date_str: &str) {
-    let term_width = terminal_width();
-
-    // padding on the text inside the box
-    let inner_width = date_str.len() + 2;
-    let box_width = inner_width + 2; // +2 for the two vertical borders
-
-    // Fallback if the terminal is too narrow
-    if box_width > term_width {
-        println!("{}", date_str);
-        return;
-    }
-
-    let start_column = (term_width - box_width) / 2;
-    let pad = " ".repeat(start_column);
-
-    println!("{}╭{}╮", pad, "─".repeat(inner_width));
-    println!("{}│ {} │", pad, date_str);
-    println!("{}╰{}╯", pad, "─".repeat(inner_width));
-    println!("\n");
-}
-
-fn print_table(rows: Vec<(String, u32)>, total: u32, colors: &HashMap<String, Color>) {
+fn print_table(rows: Vec<(String, u64)>, total: u64, colors: &HashMap<String, Color>) {
     let mut max_class_width = rows.iter().map(|(class, _)| class.len()).max().unwrap_or(0);
 
     let max_string_length = terminal_width() - 20;
@@ -208,7 +196,11 @@ fn print_table(rows: Vec<(String, u32)>, total: u32, colors: &HashMap<String, Co
 
     let mut total_percentage = 0.0;
     let mut total_duration = 0;
+    let mut count = 0;
     for (class, duration) in rows {
+        if count >= CUTOFF {
+            break;
+        }
         total_duration += duration;
         let percent = 100.0 * (duration as f64 / total as f64);
         total_percentage += percent;
@@ -221,15 +213,20 @@ fn print_table(rows: Vec<(String, u32)>, total: u32, colors: &HashMap<String, Co
             percent,
             width = max_class_width
         );
+        count += 1;
     }
 
     println!(
-        "\n{}{:<width$} {:>10} {:>7.2}%",
-        " ".repeat(left_padding),
-        truncate_string(&"Total", max_string_length).bold(),
-        format_duration(total_duration),
-        total_percentage,
-        width = max_class_width
+        "{}",
+        format!(
+            "\n{}{:<width$} {:>10} {:>7.2}%",
+            " ".repeat(left_padding),
+            truncate_string(&"Total", max_string_length),
+            format_duration(total_duration),
+            total_percentage,
+            width = max_class_width
+        )
+        .bold()
     );
 }
 
@@ -243,14 +240,39 @@ fn truncate_string(s: &str, max_len: usize) -> String {
     }
 }
 
-fn format_duration(ms: u32) -> String {
-    let secs = ms / 1000;
-    let minutes = secs / 60;
-    let seconds = secs % 60;
-    if minutes >= 60 {
-        let hours = minutes / 60;
-        let rem_minutes = minutes % 60;
-        format!("{:02}:{:02}:{:02}", hours, rem_minutes, seconds)
+pub fn format_duration(ms: u64) -> String {
+    if ms < 1_000 {
+        return format!("{ms}ms");
+    }
+
+    const SEC_PER_MIN: u64 = 60;
+    const MIN_PER_HOUR: u64 = 60;
+    const HOUR_PER_DAY: u64 = 24;
+    const DAY_PER_YEAR: u64 = 365;
+
+    let total_secs = ms / 1_000;
+
+    let seconds = total_secs % SEC_PER_MIN;
+    let total_mins = total_secs / SEC_PER_MIN;
+
+    let minutes = total_mins % MIN_PER_HOUR;
+    let total_hours = total_mins / MIN_PER_HOUR;
+
+    let hours = total_hours % HOUR_PER_DAY;
+    let total_days = total_hours / HOUR_PER_DAY;
+
+    let days = total_days % DAY_PER_YEAR;
+    let years = total_days / DAY_PER_YEAR;
+
+    if years > 0 {
+        format!(
+            "{years}y {days}d {:02}:{:02}:{:02}",
+            hours, minutes, seconds
+        )
+    } else if days > 0 {
+        format!("{days}d {:02}:{:02}:{:02}", hours, minutes, seconds)
+    } else if hours > 0 {
+        format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
     } else {
         format!("{:02}:{:02}", minutes, seconds)
     }
@@ -273,15 +295,15 @@ pub fn color_from_index(index: usize) -> Color {
         5 => Color::Cyan,
         6 => Color::BrightRed,
         7 => Color::BrightGreen,
-        8 => Color::BrightYellow,
-        9 => Color::BrightBlue,
-        10 => Color::BrightMagenta,
+        8 => Color::BrightBlue,
+        9 => Color::BrightMagenta,
+        10 => Color::BrightYellow,
         11 => Color::BrightCyan,
         _ => Color::White,
     };
 }
 
-fn key_to_color_map(list: &Vec<(String, u32)>) -> HashMap<String, Color> {
+fn key_to_color_map(list: &Vec<(String, u64)>) -> HashMap<String, Color> {
     let mut res: HashMap<String, Color> = HashMap::new();
     res.insert(String::from(""), Color::Black);
     let mut color_index = 0;
