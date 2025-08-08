@@ -31,24 +31,3 @@ listener {
 }
 ```
 Accurate focus data requires that hyprfocus is informed of idle events. Above is an example of how to set that up using hypridle
-
-## Todo
-
-- [ ] Better Usage/Help text
-- [ ] Arbitrary Interval Reports
-- [ ] Handle table formatting for long durations and extra wide characters
-- [ ] Output all errors to a log file (~/.local/share/hyprfocus/hyprfocus.log)
-- [ ] Implement settings and args for cutoffs for long reports
-- [ ] Figure out why logs stopped showing up while the daemon was still running on 8/5/25
-#### Configuration
-- [ ] hyprfocus.conf
-    - [ ] display settings
-        - [ ] fancy_timeline
-        - [ ] characters
-        - [ ] colors
-        - [ ] layout
-        - [ ] minimum duration to display
-        - [ ] show labels next to timelines in multi
-    - [ ] default argument settings
-    - [ ] ignore settings
-    - [ ] category settings

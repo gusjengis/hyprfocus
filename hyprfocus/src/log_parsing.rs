@@ -21,8 +21,14 @@ pub fn compute_durations(
     for row in reader {
         let record = row?;
         let timestamp: u64 = (record[0].parse::<i64>()?) as u64;
-        let class = record[1].to_string();
+        let mut class = record[1].to_string();
         let title = record[2].to_string();
+
+        // filter classes using hashmap to rename them according to config
+        class = match settings.class_mappings.get(&class) {
+            Some(filtered_class) => filtered_class.clone(),
+            None => class,
+        };
 
         if class == "SYSTEM" {
             match title.as_str() {
@@ -138,8 +144,14 @@ pub fn timeline(
     for row in reader {
         let record = row.unwrap();
         let timestamp: i64 = record[0].parse().unwrap();
-        let class = record[1].to_string();
+        let mut class = record[1].to_string();
         let title = record[2].to_string();
+
+        // filter classes using hashmap to rename them according to config
+        class = match settings.class_mappings.get(&class) {
+            Some(filtered_class) => filtered_class.clone(),
+            None => class,
+        };
 
         if class == "SYSTEM" {
             match title.as_str() {
@@ -180,7 +192,7 @@ pub fn timeline(
                 &mut sections,
             );
             last_timestamp = Some(timestamp);
-            last_class = Some(class);
+            last_class = Some(class.clone());
             last_title = Some(title);
         }
     }

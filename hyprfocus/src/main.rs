@@ -5,12 +5,12 @@ mod view;
 
 use chrono::{Local, TimeDelta};
 use daemon_commands::send_command;
-use std::env;
+use std::{collections::HashMap, env};
 use view::render_log;
 
 fn main() {
-    // use chrono::Local;
-    // let start = Local::now().timestamp_millis();
+    use chrono::Local;
+    let start = Local::now().timestamp_millis();
     let args: Vec<String> = env::args().collect();
     match args.get(1).map(String::as_str) {
         Some("--idle") => send_command("idle"),
@@ -28,7 +28,10 @@ fn main() {
             let mut days = false;
             for arg in args.iter().skip(1) {
                 if class {
-                    settings.class_arg = arg.clone();
+                    settings.class_arg = match settings.class_mappings.get(arg) {
+                        Some(filtered_class) => filtered_class.clone(),
+                        None => arg.clone(),
+                    };
                     class = false;
                 } else if days {
                     match arg.clone().parse::<u64>() {
@@ -78,8 +81,8 @@ fn main() {
         }
     }
 
-    // let end = Local::now().timestamp_millis();
-    // println!("Runtime: {}ms", end - start)
+    let end = Local::now().timestamp_millis();
+    println!("Runtime: {}ms", end - start)
 }
 
 fn print_usage() {
@@ -99,7 +102,8 @@ pub struct Settings {
     pub full: bool,
     pub multi_timeline: bool,
     pub class_arg: String,
-    pub interval: Interval, //<Tz>,
+    pub interval: Interval,                      //<Tz>,
+    pub class_mappings: HashMap<String, String>, //<Tz>,
 }
 
 impl Settings {
@@ -109,6 +113,23 @@ impl Settings {
             multi_timeline: false,
             class_arg: String::from(""),
             interval: Interval::default(),
+            class_mappings: HashMap::from([
+                (String::from("Chromium-browser"), String::from("chromium")),
+                (String::from("steam_app_813230"), String::from("steam")),
+                (String::from("Unity"), String::from("unity")),
+                (String::from("Alacritty"), String::from("alacritty")),
+                (String::from("Slack"), String::from("slack")),
+                (String::from("plasticx"), String::from("plastic")),
+                (String::from("gcr-prompter"), String::from("keyring")),
+                (
+                    String::from(".blueman-manager-wrapped"),
+                    String::from("blueman"),
+                ),
+                (
+                    String::from("com.github.wwmm.easyeffects"),
+                    String::from("easyeffects"),
+                ),
+            ]),
         }
     }
 }
