@@ -1,7 +1,7 @@
 use chrono::{Datelike, Local};
 use directories::BaseDirs;
 use std::{
-    fs::{File, OpenOptions},
+    fs::{File, OpenOptions, create_dir_all},
     io::{self, Write},
     path::PathBuf,
     time::Duration,
@@ -23,7 +23,7 @@ struct LogWriter {
 
 impl LogWriter {
     fn init(base_dir: PathBuf) -> io::Result<Self> {
-        std::fs::create_dir_all(&base_dir)?;
+        create_dir_all(&base_dir)?;
         let (day_key, path) = Self::today_path(&base_dir);
         let file = LogWriter::create_log_file(&path)?;
         Ok(Self {
@@ -54,6 +54,13 @@ impl LogWriter {
         let safe_title = title.replace('"', "\"\"");
         let line = format!("{},{},\"{}\"\n", ts, class, safe_title);
         self.file.write_all(line.as_bytes())?;
+
+        use notify_rust::{Notification, Timeout};
+        let _ = Notification::new()
+            .summary("Log Written")
+            .body(&format!("{}", line.as_str()))
+            .timeout(Timeout::Milliseconds(5_000))
+            .show();
         Ok(())
     }
 
@@ -77,7 +84,7 @@ pub async fn run_log_writer(mut receiver_handle: tokio::sync::mpsc::Receiver<Log
         match LogWriter::init(base_dir.clone()) {
             Ok(w) => break w,
             Err(e) => {
-                eprintln!("[writer] init failed: {e}; retrying in 1s"); // output to file
+                log_error(format!("[writer] init failed: {e}; retrying in 1s")); // output to file
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
         }
@@ -87,10 +94,10 @@ pub async fn run_log_writer(mut receiver_handle: tokio::sync::mpsc::Receiver<Log
         match msg {
             LogMsg::Line { ts, class, title } => {
                 if let Err(e) = writer.write_line(ts, &class, &title) {
-                    eprintln!("[writer] write failed: {e}; retry in 500ms");
+                    log_error(format!("[writer] write failed: {e}; retry in 500ms"));
                     tokio::time::sleep(Duration::from_millis(500)).await;
                     if let Err(e2) = writer.write_line(ts, &class, &title) {
-                        eprintln!("[writer] write failed again: {e2}; dropping line");
+                        log_error(format!("[writer] write failed again: {e2}; dropping line"));
                     }
                 }
             }
@@ -100,4 +107,34 @@ pub async fn run_log_writer(mut receiver_handle: tokio::sync::mpsc::Receiver<Log
             }
         }
     }
+}
+
+pub fn log_error<S: AsRef<str>>(text: S) {
+    match {
+        let dir = BaseDirs::new()
+            .map(|b| b.data_dir().to_path_buf())
+            .unwrap_or_else(|| PathBuf::from("/tmp"))
+            .join("hyprfocus");
+        create_dir_all(&dir).unwrap();
+
+        let log_path = dir.join("hyprfocus.log");
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(log_path)
+            .unwrap();
+
+        use notify_rust::{Notification, Timeout};
+        let _ = Notification::new()
+            .summary("Log Written")
+            .body(&format!("{}", text.as_ref()))
+            .urgency(notify_rust::Urgency::Critical)
+            .timeout(Timeout::Milliseconds(5_000))
+            .show();
+        eprintln!("{}", text.as_ref());
+        writeln!(file, "{}", text.as_ref())
+    } {
+        Ok(_) => {}
+        Err(e) => eprintln!("Failed to write error to log.\n\n{e}"),
+    };
 }

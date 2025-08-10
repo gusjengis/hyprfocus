@@ -1,11 +1,11 @@
-mod idle_socket;
 mod log_writer;
+mod socket;
 
 use std::time::Duration;
 
 use hyprland::event_listener::{AsyncEventListener, WindowEventData};
-use idle_socket::start_socket_listener;
-use log_writer::{LogMsg, run_log_writer};
+use log_writer::{LogMsg, log_error, run_log_writer};
+use socket::start_socket_listener;
 use tokio::{signal, sync::mpsc};
 
 #[tokio::main]
@@ -46,7 +46,7 @@ async fn main() -> hyprland::Result<()> {
                 );
 
                 if let Err(e) = event_listener.start_listener_async().await {
-                    eprintln!("[hypr] listener ended: {e}; retrying in 1s"); // output to file
+                    log_error(format!("[hypr] listener ended: {e}; retrying in 1s")); // output to file
                     tokio::time::sleep(Duration::from_secs(1)).await;
                 }
             }
@@ -58,7 +58,7 @@ async fn main() -> hyprland::Result<()> {
         tokio::spawn(async move {
             loop {
                 if let Err(e) = start_socket_listener(sender_handle_sock.clone()).await {
-                    eprintln!("[sock] listener failed: {e}; retrying in 3s"); // output to file
+                    log_error(format!("[sock] listener failed: {e}; retrying in 3s",)); // output to file
                     tokio::time::sleep(Duration::from_secs(3)).await;
                 }
             }

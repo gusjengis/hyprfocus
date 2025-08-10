@@ -5,7 +5,7 @@ use tokio::{
     sync::mpsc::Sender,
 };
 
-use crate::log_writer::LogMsg;
+use crate::log_writer::{LogMsg, log_error};
 
 pub async fn start_socket_listener(sender_handle: Sender<LogMsg>) -> std::io::Result<()> {
     const SOCKET_PATH: &str = "/tmp/hyprfocus.sock";
@@ -42,7 +42,16 @@ pub async fn start_socket_listener(sender_handle: Sender<LogMsg>) -> std::io::Re
                             })
                             .await;
                     }
-                    other => eprintln!("Unknown message: {other}"), // output to file
+                    "shutdown" => {
+                        let _ = sender_handle_clone
+                            .send(LogMsg::Line {
+                                ts,
+                                class: "SYSTEM".into(),
+                                title: "shutdown".into(),
+                            })
+                            .await;
+                    }
+                    other => log_error(format!("Unknown message: {other}")), // output to file
                 }
             }
         });
