@@ -15,7 +15,6 @@ fn main() {
     match args.get(1).map(String::as_str) {
         Some("--idle") => send_command("idle"),
         Some("--resume") => send_command("resume"),
-        Some("--shutdown") => send_command("shutdown"),
         Some("--help") | Some("-h") => {
             print_usage();
         }

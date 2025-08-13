@@ -1,59 +1,36 @@
 use std::{fs::remove_file, path::Path};
 
-use tokio::{
-    io::{AsyncBufReadExt, BufReader},
-    sync::mpsc::Sender,
-};
+use tokio::sync::mpsc::Sender;
 
 use crate::log_writer::{LogMsg, log_error};
 
-pub async fn start_socket_listener(sender_handle: Sender<LogMsg>) -> std::io::Result<()> {
+use tokio::net::UnixDatagram;
+pub async fn start_socket_listener(sender: Sender<LogMsg>) -> std::io::Result<()> {
     const SOCKET_PATH: &str = "/tmp/hyprfocus.sock";
-
     if Path::new(SOCKET_PATH).exists() {
         let _ = remove_file(SOCKET_PATH);
     }
-    let listener = tokio::net::UnixListener::bind(SOCKET_PATH)?;
+    let sock = UnixDatagram::bind(SOCKET_PATH)?; // no per-connection tasks
 
+    let mut buf = vec![0u8; 256];
     loop {
-        let (stream, _) = listener.accept().await?;
-        let sender_handle_clone = sender_handle.clone();
-        tokio::spawn(async move {
-            let reader = BufReader::new(stream);
-            let mut lines = reader.lines();
-            while let Ok(Some(line)) = lines.next_line().await {
-                let ts = chrono::Local::now().timestamp_millis();
-                match line.trim() {
-                    "idle" => {
-                        let _ = sender_handle_clone
-                            .send(LogMsg::Line {
-                                ts,
-                                class: "SYSTEM".into(),
-                                title: "idle".into(),
-                            })
-                            .await;
-                    }
-                    "resume" => {
-                        let _ = sender_handle_clone
-                            .send(LogMsg::Line {
-                                ts,
-                                class: "SYSTEM".into(),
-                                title: "resume".into(),
-                            })
-                            .await;
-                    }
-                    "shutdown" => {
-                        let _ = sender_handle_clone
-                            .send(LogMsg::Line {
-                                ts,
-                                class: "SYSTEM".into(),
-                                title: "shutdown".into(),
-                            })
-                            .await;
-                    }
-                    other => log_error(format!("Unknown message: {other}")), // output to file
-                }
+        let (n, _addr) = sock.recv_from(&mut buf).await?;
+        let cmd = std::str::from_utf8(&buf[..n]).unwrap_or("").trim();
+        let ts = chrono::Local::now().timestamp_millis();
+        let (class, title) = match cmd {
+            "idle" => ("SYSTEM", "idle"),
+            "resume" => ("SYSTEM", "resume"),
+            other => {
+                log_error(format!("{ts}, Unknown message: {other}"));
+                continue;
             }
-        });
+        };
+        let _ = sender
+            .send(LogMsg::Line {
+                ts,
+                class: class.into(),
+                title: title.into(),
+            })
+            .await;
     }
 }

@@ -163,8 +163,7 @@ pub fn timeline(
                 "resume" => {
                     last_timestamp = Some(timestamp);
                 }
-                "shutdown" | "idle" => {}
-                _ => {
+                "shutdown" | "idle" => {
                     assign_interval_to_section(
                         last_timestamp,
                         timestamp,
@@ -178,6 +177,7 @@ pub fn timeline(
                     );
                     last_timestamp = None;
                 }
+                _ => {}
             }
         } else {
             assign_interval_to_section(

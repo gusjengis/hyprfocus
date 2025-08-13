@@ -12,7 +12,7 @@ pub enum LogMsg {
         class: String,
         title: String,
     },
-    Shutdown, // flush/close and exit writer task
+    Shutdown,
 }
 
 struct LogWriter {
@@ -55,12 +55,6 @@ impl LogWriter {
         let line = format!("{},{},\"{}\"\n", ts, class, safe_title);
         self.file.write_all(line.as_bytes())?;
 
-        use notify_rust::{Notification, Timeout};
-        let _ = Notification::new()
-            .summary("Log Written")
-            .body(&format!("{}", line.as_str()))
-            .timeout(Timeout::Milliseconds(5_000))
-            .show();
         Ok(())
     }
 
@@ -84,20 +78,24 @@ pub async fn run_log_writer(mut receiver_handle: tokio::sync::mpsc::Receiver<Log
         match LogWriter::init(base_dir.clone()) {
             Ok(w) => break w,
             Err(e) => {
-                log_error(format!("[writer] init failed: {e}; retrying in 1s")); // output to file
+                let ts = chrono::Local::now().timestamp_millis();
+                log_error(format!("{ts}, [writer] init failed: {e}; retrying in 1s")); // output to file
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
         }
     };
 
+    //  listen for LogMsg(s) and write them to todays log file, that basically sums up this whole file
     while let Some(msg) = receiver_handle.recv().await {
         match msg {
             LogMsg::Line { ts, class, title } => {
                 if let Err(e) = writer.write_line(ts, &class, &title) {
-                    log_error(format!("[writer] write failed: {e}; retry in 500ms"));
+                    log_error(format!("{ts}, [writer] write failed: {e}; retry in 500ms"));
                     tokio::time::sleep(Duration::from_millis(500)).await;
                     if let Err(e2) = writer.write_line(ts, &class, &title) {
-                        log_error(format!("[writer] write failed again: {e2}; dropping line"));
+                        log_error(format!(
+                            "{ts}, [writer] write failed again: {e2}; dropping line"
+                        ));
                     }
                 }
             }
@@ -117,20 +115,13 @@ pub fn log_error<S: AsRef<str>>(text: S) {
             .join("hyprfocus");
         create_dir_all(&dir).unwrap();
 
-        let log_path = dir.join("hyprfocus.log");
+        let log_path = dir.join("hyprfocusd.log");
         let mut file = OpenOptions::new()
             .create(true)
             .append(true)
             .open(log_path)
             .unwrap();
 
-        use notify_rust::{Notification, Timeout};
-        let _ = Notification::new()
-            .summary("Log Written")
-            .body(&format!("{}", text.as_ref()))
-            .urgency(notify_rust::Urgency::Critical)
-            .timeout(Timeout::Milliseconds(5_000))
-            .show();
         eprintln!("{}", text.as_ref());
         writeln!(file, "{}", text.as_ref())
     } {
