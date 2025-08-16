@@ -9,8 +9,8 @@ use std::{collections::HashMap, env};
 use view::render_log;
 
 fn main() {
-    use chrono::Local;
-    let start = Local::now().timestamp_millis();
+    // use chrono::Local;
+    // let start = Local::now().timestamp_millis();
     let args: Vec<String> = env::args().collect();
     match args.get(1).map(String::as_str) {
         Some("--idle") => send_command("idle"),
@@ -81,8 +81,8 @@ fn main() {
         }
     }
 
-    let end = Local::now().timestamp_millis();
-    println!("Runtime: {}ms", end - start)
+    // let end = Local::now().timestamp_millis();
+    // println!("Runtime: {}ms", end - start)
 }
 
 fn print_usage() {
@@ -128,6 +128,12 @@ impl Settings {
                 (
                     String::from("com.github.wwmm.easyeffects"),
                     String::from("easyeffects"),
+                ),
+                (String::from("org.gnome.Nautilus"), String::from("nautilus")),
+                (String::from("org.pwmt.zathura"), String::from("zathura")),
+                (
+                    String::from("Xdg-desktop-portal-gtk"),
+                    String::from("xdg-desktop-portal-gtk"),
                 ),
             ]),
         }
