@@ -3,9 +3,12 @@ use directories::BaseDirs;
 use std::{
     fs::{File, OpenOptions, create_dir_all},
     io::{self, Write},
+    os::unix::net::UnixDatagram,
     path::PathBuf,
     time::Duration,
 };
+
+use crate::Settings;
 pub enum LogMsg {
     Line {
         ts: i64,
@@ -19,10 +22,11 @@ struct LogWriter {
     base_dir: PathBuf,
     day_key: (i32, u32, u32), // (year, month, day)
     file: File,
+    settings: Settings,
 }
 
 impl LogWriter {
-    fn init(base_dir: PathBuf) -> io::Result<Self> {
+    fn init(base_dir: PathBuf, settings: Settings) -> io::Result<Self> {
         create_dir_all(&base_dir)?;
         let (day_key, path) = Self::today_path(&base_dir);
         let file = LogWriter::create_log_file(&path)?;
@@ -30,6 +34,7 @@ impl LogWriter {
             base_dir,
             day_key,
             file,
+            settings,
         })
     }
 
@@ -54,6 +59,9 @@ impl LogWriter {
         let safe_title = title.replace('"', "\"\"");
         let line = format!("{},{},\"{}\"\n", ts, class, safe_title);
         self.file.write_all(line.as_bytes())?;
+        if self.settings.snitch {
+            send_datagram("\n");
+        }
 
         Ok(())
     }
@@ -68,14 +76,17 @@ impl LogWriter {
     }
 }
 
-pub async fn run_log_writer(mut receiver_handle: tokio::sync::mpsc::Receiver<LogMsg>) {
+pub async fn run_log_writer(
+    mut receiver_handle: tokio::sync::mpsc::Receiver<LogMsg>,
+    settings: Settings,
+) {
     let base_dir = BaseDirs::new()
         .map(|b| b.data_dir().to_path_buf())
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("hyprfocus");
 
     let mut writer = loop {
-        match LogWriter::init(base_dir.clone()) {
+        match LogWriter::init(base_dir.clone(), settings.clone()) {
             Ok(w) => break w,
             Err(e) => {
                 let ts = chrono::Local::now().timestamp_millis();
@@ -128,4 +139,11 @@ pub fn log_error<S: AsRef<str>>(text: S) {
         Ok(_) => {}
         Err(e) => eprintln!("Failed to write error to log.\n\n{e}"),
     };
+}
+
+fn send_datagram(msg: &str) {
+    const SOCKET_PATH: &str = "/tmp/hyprfocus-snitch.sock";
+    if let Ok(sock) = UnixDatagram::unbound() {
+        let _ = sock.send_to(msg.as_bytes(), SOCKET_PATH);
+    }
 }

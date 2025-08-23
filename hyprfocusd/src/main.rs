@@ -2,7 +2,7 @@ mod log_writer;
 mod shutdown;
 mod socket;
 
-use std::time::Duration;
+use std::{env, time::Duration};
 
 use hyprland::event_listener::{AsyncEventListener, WindowEventData};
 use log_writer::{LogMsg, log_error, run_log_writer};
@@ -12,11 +12,19 @@ use tokio::sync::mpsc;
 
 #[tokio::main]
 async fn main() -> hyprland::Result<()> {
+    let mut settings = Settings::new();
+
+    let args: Vec<String> = env::args().collect();
+    match args.get(1).map(String::as_str) {
+        Some("snitch") => settings.snitch = true,
+        _ => {}
+    };
+
     // setup mpsc channel for sending messages to the log writer
     let (sender_handle, receiver_handle) = mpsc::channel::<LogMsg>(1024);
 
     // start the log writer, this handles all writing to log files from one thread to avoid conflicts
-    let writer_jh = tokio::spawn(run_log_writer(receiver_handle));
+    let writer_jh = tokio::spawn(run_log_writer(receiver_handle, settings));
 
     // log boot
     let _ = sender_handle
@@ -96,4 +104,15 @@ async fn main() -> hyprland::Result<()> {
     let _ = writer_jh.await;
 
     Ok(())
+}
+
+#[derive(Clone)]
+pub struct Settings {
+    pub snitch: bool,
+}
+
+impl Settings {
+    fn new() -> Self {
+        Self { snitch: false }
+    }
 }
