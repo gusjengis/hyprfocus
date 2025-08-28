@@ -4,9 +4,15 @@ This is an activity/screen time tracker for hyprland.
 This is achieved by using the hyprfocusd daemon to record all focus events in a log.  
 The hyprfocus CLI will use these logs to generate reports on your activity.
 
-## Screeshots
-![Default](./screenshots/default.png)
+## Screenshots
+Default
+
+![Defaulth](./screenshots/default.png)
+Multi-Line
+
 ![Multi-Line](./screenshots/multi-line.png)
+Multi-Day
+
 ![Multi-Day](./screenshots/multi-day.png)
 
 ## Usage
