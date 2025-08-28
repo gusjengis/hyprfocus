@@ -1,4 +1,3 @@
-// hyprfocusd/src/shutdown.rs
 use futures_util::StreamExt;
 use tokio::signal;
 use tokio::task::JoinHandle;

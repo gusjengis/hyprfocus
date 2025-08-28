@@ -60,7 +60,7 @@ impl LogWriter {
         let line = format!("{},{},\"{}\"\n", ts, class, safe_title);
         self.file.write_all(line.as_bytes())?;
         if self.settings.snitch {
-            send_datagram("\n");
+            send_datagram(line.as_str());
         }
 
         Ok(())

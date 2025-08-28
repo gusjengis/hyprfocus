@@ -5,6 +5,8 @@
 - [ ] Output all errors to a log file (~/.local/share/hyprfocus/hyprfocus.log)
 - [ ] Generate notification for all logs for debug purposes
 - [ ] Implement settings and args for cutoffs for long reports
+- [ ] Switch to UTC
+- [ ] Collapse the long tail
 
 ### Configuration
 - [ ] Setup hyprfocus.conf and get parsing working
@@ -30,7 +32,3 @@
         1754525658737,kitty,"vim"
         I was using a controller, but the idle came well after 3 minutes
         And there was no resume, all very strange
-
-        This may have something to do with hypridle, for some reason I never
-        got the resume signal, and apparently hypridle isn't smart enough to check
-        controller use

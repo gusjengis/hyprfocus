@@ -83,20 +83,20 @@ async fn main() -> hyprland::Result<()> {
     }
 
     // Listen to logind for shutdown signal, this gives enough time to reliably log shutdowns
-    if let None = try_spawn_logind_shutdown_watcher(sender_handle.clone()).await {
+    if let Some(jhandle) = try_spawn_logind_shutdown_watcher(sender_handle.clone()).await {
+        jhandle.await;
+    } else {
         // As a fallback for systems that don't have systemd, listen for the signals that come
         // during shutdown. This only works half the time, if someone who isn't on systemd wants to
         // handle shutdown properly for their system that would be awesome.
         wait_for_shutdown_signal().await;
 
         let _ = sender_handle
-            .send(LogMsg::Line {
-                ts: chrono::Local::now().timestamp_millis(),
-                class: "SYSTEM".into(),
-                title: "shutdown".into(),
+            .send(Log {
+                timestamp: chrono::Local::now().timestamp_millis(),
+                label: String::from("SYSTEM: shutdown"),
             })
             .await;
-        let _ = sender_handle.send(LogMsg::Shutdown).await;
     }
 
     // wrap up
