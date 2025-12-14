@@ -13,3 +13,4 @@ directories = "6.0.0"
 notify-rust = "4.11.7"
 zbus = { version = "5.9", default-features = false, features = ["tokio"] }
 futures-util = "0.3.31"              
+mosaic-model = "0.1.1"              

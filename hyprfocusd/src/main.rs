@@ -6,6 +6,7 @@ use std::{env, time::Duration};
 
 use hyprland::event_listener::{AsyncEventListener, WindowEventData};
 use log_writer::{LogMsg, log_error, run_log_writer};
+use mosaic_model::log::Log;
 use shutdown::{try_spawn_logind_shutdown_watcher, wait_for_shutdown_signal};
 use socket::start_socket_listener;
 use tokio::sync::mpsc;
@@ -92,9 +93,10 @@ async fn main() -> hyprland::Result<()> {
         wait_for_shutdown_signal().await;
 
         let _ = sender_handle
-            .send(Log {
-                timestamp: chrono::Local::now().timestamp_millis(),
-                label: String::from("SYSTEM: shutdown"),
+            .send(LogMsg::Line {
+                ts: chrono::Local::now().timestamp_millis(),
+                class: String::from("SYSTEM"),
+                title: String::from("shutdown"),
             })
             .await;
     }

@@ -618,6 +618,7 @@ dependencies = [
  "directories",
  "futures-util",
  "hyprland",
+ "mosaic-model",
  "notify-rust",
  "tokio",
  "zbus",
@@ -801,6 +802,12 @@ dependencies = [
  "wasi 0.11.1+wasi-snapshot-preview1",
  "windows-sys 0.59.0",
 ]
+
+[[package]]
+name = "mosaic-model"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27e5511da569f75e02fcbd0ea021064638f5292795b9de8c18df3239220ecd19"
 
 [[package]]
 name = "nix"
