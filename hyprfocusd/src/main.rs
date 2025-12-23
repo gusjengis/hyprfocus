@@ -30,7 +30,7 @@ async fn main() -> hyprland::Result<()> {
     // log boot
     let _ = sender_handle
         .send(LogMsg::Line {
-            ts: chrono::Local::now().timestamp_millis(),
+            ts: chrono::Utc::now().timestamp_millis(),
             class: "SYSTEM".into(),
             title: "boot".into(),
         })
@@ -52,7 +52,7 @@ async fn main() -> hyprland::Result<()> {
                             let title = data.title.clone();
 
                             let _ = sender_handle_static.try_send(LogMsg::Line {
-                                ts: chrono::Local::now().timestamp_millis(),
+                                ts: chrono::Utc::now().timestamp_millis(),
                                 class,
                                 title,
                             });
@@ -61,7 +61,7 @@ async fn main() -> hyprland::Result<()> {
                 );
 
                 if let Err(e) = event_listener.start_listener_async().await {
-                    let ts = chrono::Local::now().timestamp_millis();
+                    let ts = chrono::Utc::now().timestamp_millis();
                     log_error(format!("{ts}, [hypr] listener ended: {e}; retrying in 1s")); // output to file
                     tokio::time::sleep(Duration::from_secs(1)).await;
                 }
@@ -75,7 +75,7 @@ async fn main() -> hyprland::Result<()> {
         tokio::spawn(async move {
             loop {
                 if let Err(e) = start_socket_listener(sender_handle_sock.clone()).await {
-                    let ts = chrono::Local::now().timestamp_millis();
+                    let ts = chrono::Utc::now().timestamp_millis();
                     log_error(format!("{ts}, [sock] listener failed: {e}; retrying in 3s",)); // output to file
                     tokio::time::sleep(Duration::from_secs(3)).await;
                 }
@@ -88,13 +88,13 @@ async fn main() -> hyprland::Result<()> {
         jhandle.await;
     } else {
         // As a fallback for systems that don't have systemd, listen for the signals that come
-        // during shutdown. This only works half the time, if someone who isn't on systemd wants to
-        // handle shutdown properly for their system that would be awesome.
+        // during shutdown. This only works half the time in my testing. If someone who isn't on
+        // systemd wants to handle shutdown properly for their system that would be awesome.
         wait_for_shutdown_signal().await;
 
         let _ = sender_handle
             .send(LogMsg::Line {
-                ts: chrono::Local::now().timestamp_millis(),
+                ts: chrono::Utc::now().timestamp_millis(),
                 class: String::from("SYSTEM"),
                 title: String::from("shutdown"),
             })

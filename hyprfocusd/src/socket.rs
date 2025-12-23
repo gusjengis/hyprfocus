@@ -16,7 +16,7 @@ pub async fn start_socket_listener(sender: Sender<LogMsg>) -> std::io::Result<()
     loop {
         let (n, _addr) = sock.recv_from(&mut buf).await?;
         let cmd = std::str::from_utf8(&buf[..n]).unwrap_or("").trim();
-        let ts = chrono::Local::now().timestamp_millis();
+        let ts = chrono::Utc::now().timestamp_millis();
         let (class, title) = match cmd {
             "idle" => ("SYSTEM", "idle"),
             "resume" => ("SYSTEM", "resume"),

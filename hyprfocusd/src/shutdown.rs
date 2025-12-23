@@ -40,7 +40,7 @@ pub async fn try_spawn_logind_shutdown_watcher(
             if args.starting {
                 let _ = sender
                     .send(LogMsg::Line {
-                        ts: chrono::Local::now().timestamp_millis(),
+                        ts: chrono::Utc::now().timestamp_millis(),
                         class: "SYSTEM".into(),
                         title: "shutdown".into(),
                     })

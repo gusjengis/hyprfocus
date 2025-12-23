@@ -1,4 +1,4 @@
-use chrono::{Datelike, Local};
+use chrono::{Datelike, Utc};
 use directories::BaseDirs;
 use std::{
     fs::{File, OpenOptions, create_dir_all},
@@ -39,7 +39,7 @@ impl LogWriter {
     }
 
     fn today_path(base_dir: &PathBuf) -> ((i32, u32, u32), PathBuf) {
-        let now = Local::now();
+        let now = Utc::now();
         let day_key = (now.year(), now.month(), now.day());
         let path = base_dir.join(format!("{}", now.format("%Y-%m-%d.csv")));
         (day_key, path)
@@ -89,7 +89,7 @@ pub async fn run_log_writer(
         match LogWriter::init(base_dir.clone(), settings.clone()) {
             Ok(w) => break w,
             Err(e) => {
-                let ts = chrono::Local::now().timestamp_millis();
+                let ts = chrono::Utc::now().timestamp_millis();
                 log_error(format!("{ts}, [writer] init failed: {e}; retrying in 1s")); // output to file
                 tokio::time::sleep(Duration::from_secs(1)).await;
             }
