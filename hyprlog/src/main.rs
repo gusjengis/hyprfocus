@@ -3,14 +3,14 @@ mod log_parsing;
 mod log_reader;
 mod view;
 
-use chrono::{Local, TimeDelta};
+use chrono::{TimeDelta, Utc};
 use daemon_commands::send_command;
 use std::{collections::HashMap, env};
 use view::render_log;
 
 fn main() {
-    // use chrono::Local;
-    // let start = Local::now().timestamp_millis();
+    // use chrono::Utc;
+    // let start = Utc::now().timestamp_millis();
     let args: Vec<String> = env::args().collect();
     match args.get(1).map(String::as_str) {
         Some("--idle") => send_command("idle"),
@@ -81,13 +81,13 @@ fn main() {
         }
     }
 
-    // let end = Local::now().timestamp_millis();
+    // let end = Utc::now().timestamp_millis();
     // println!("Runtime: {}ms", end - start)
 }
 
 fn print_usage() {
     println!(
-        "Usage: hyprfocus\n
+        "Usage: hyprlog\n
         [ --help | -h ]\n
         [ --full | -f ]\n
         [ --multi | -m ]\n
@@ -177,7 +177,7 @@ impl Interval {
     pub fn date_str(&self) -> String {
         match *self {
             Interval::Days { days } => {
-                let end = Local::now().date_naive();
+                let end = Utc::now().date_naive();
                 let start = end - TimeDelta::days((days - 1) as i64);
 
                 if days == 1 {

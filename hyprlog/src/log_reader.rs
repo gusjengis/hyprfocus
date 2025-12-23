@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use chrono::{Local, TimeDelta};
+use chrono::{TimeDelta, Utc};
 use csv::{Reader, StringRecord};
 use directories::BaseDirs;
 use std::{
@@ -21,14 +21,14 @@ impl LogReader {
         let base_dir = BaseDirs::new()
             .map(|b| b.data_dir().to_path_buf())
             .unwrap_or_else(|| PathBuf::from("/tmp"))
-            .join("hyprfocus");
+            .join("hyprlog");
 
         create_dir_all(&base_dir).expect("failed to create data directory");
 
         let mut files: Vec<PathBuf> = match settings.interval {
             Interval::Days { days } => {
                 (0..days)
-                    .map(|i| Local::now().date_naive() - TimeDelta::days((days - 1 - i) as i64)) // oldest→newest
+                    .map(|i| Utc::now().date_naive() - TimeDelta::days((days - 1 - i) as i64)) // oldest→newest
                     .map(|d| base_dir.join(format!("{}.csv", d.format("%Y-%m-%d"))))
                     .collect()
             }

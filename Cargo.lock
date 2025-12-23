@@ -598,33 +598,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
-name = "hyprfocus"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "colored",
- "csv",
- "directories",
- "notify-rust",
- "terminal_size",
-]
-
-[[package]]
-name = "hyprfocusd"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "directories",
- "futures-util",
- "hyprland",
- "mosaic-model",
- "notify-rust",
- "tokio",
- "zbus",
-]
-
-[[package]]
 name = "hyprland"
 version = "0.4.0-beta.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -655,6 +628,33 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "hyprlog"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "colored",
+ "csv",
+ "directories",
+ "notify-rust",
+ "terminal_size",
+]
+
+[[package]]
+name = "hyprlogd"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "directories",
+ "futures-util",
+ "hyprland",
+ "mosaic-model",
+ "notify-rust",
+ "tokio",
+ "zbus",
 ]
 
 [[package]]

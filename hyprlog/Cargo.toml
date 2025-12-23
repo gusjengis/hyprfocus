@@ -1,5 +1,5 @@
 [package]
-name = "hyprfocus"
+name = "hyprlog"
 version = "0.1.0"
 edition = "2024"
 description = "Hyprland focus logger CLI"

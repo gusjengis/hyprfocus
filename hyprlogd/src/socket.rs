@@ -6,7 +6,7 @@ use crate::log_writer::{LogMsg, log_error};
 
 use tokio::net::UnixDatagram;
 pub async fn start_socket_listener(sender: Sender<LogMsg>) -> std::io::Result<()> {
-    const SOCKET_PATH: &str = "/tmp/hyprfocus.sock";
+    const SOCKET_PATH: &str = "/tmp/hyprlog.sock";
     if Path::new(SOCKET_PATH).exists() {
         let _ = remove_file(SOCKET_PATH);
     }

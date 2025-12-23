@@ -1,5 +1,5 @@
 [package]
-name = "hyprfocusd"
+name = "hyprlogd"
 version = "0.1.0"
 edition = "2024"
 description = "Hyprland focus logger daemon"

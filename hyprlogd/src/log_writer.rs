@@ -83,7 +83,7 @@ pub async fn run_log_writer(
     let base_dir = BaseDirs::new()
         .map(|b| b.data_dir().to_path_buf())
         .unwrap_or_else(|| PathBuf::from("/tmp"))
-        .join("hyprfocus");
+        .join("hyprlog");
 
     let mut writer = loop {
         match LogWriter::init(base_dir.clone(), settings.clone()) {
@@ -123,10 +123,10 @@ pub fn log_error<S: AsRef<str>>(text: S) {
         let dir = BaseDirs::new()
             .map(|b| b.data_dir().to_path_buf())
             .unwrap_or_else(|| PathBuf::from("/tmp"))
-            .join("hyprfocus");
+            .join("hyprlog");
         create_dir_all(&dir).unwrap();
 
-        let log_path = dir.join("hyprfocusd.log");
+        let log_path = dir.join("hyprlogd.log");
         let mut file = OpenOptions::new()
             .create(true)
             .append(true)
@@ -142,7 +142,7 @@ pub fn log_error<S: AsRef<str>>(text: S) {
 }
 
 fn send_datagram(msg: &str) {
-    const SOCKET_PATH: &str = "/tmp/hyprfocus-snitch.sock";
+    const SOCKET_PATH: &str = "/tmp/hyprlog-snitch.sock";
     if let Ok(sock) = UnixDatagram::unbound() {
         let _ = sock.send_to(msg.as_bytes(), SOCKET_PATH);
     }

@@ -69,7 +69,7 @@ async fn main() -> hyprland::Result<()> {
         });
     }
 
-    // listen for signals from the hyprfocus CLI, this is used to get idle and resume signals
+    // listen for signals from the hyprlog CLI, this is used to get idle and resume signals
     {
         let sender_handle_sock = sender_handle.clone();
         tokio::spawn(async move {

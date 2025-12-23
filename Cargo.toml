@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    "hyprfocus",
-    "hyprfocusd"
+    "hyprlog",
+    "hyprlogd"
 ]

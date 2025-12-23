@@ -1,6 +1,6 @@
 use std::{collections::HashMap, error::Error};
 
-use chrono::{Duration, Local, Timelike};
+use chrono::{Duration, Timelike, Utc};
 
 use crate::{Settings, log_reader::LogReader};
 
@@ -74,7 +74,7 @@ pub fn compute_durations(
         }
     }
 
-    let timestamp = chrono::Local::now().timestamp_millis() as u64;
+    let timestamp = chrono::Utc::now().timestamp_millis() as u64;
     add_interval_to_map(
         last_timestamp,
         timestamp,
@@ -120,7 +120,7 @@ pub fn timeline(
     let (ms_per_section, starting_ms) = match settings.interval {
         crate::Interval::Days { days } => (
             days as i64 * MS_PER_DAY / width as i64,
-            (Local::now()
+            (Utc::now()
                 .with_hour(0)
                 .unwrap()
                 .with_minute(0)
@@ -197,7 +197,7 @@ pub fn timeline(
         }
     }
 
-    let timestamp = chrono::Local::now().timestamp_millis();
+    let timestamp = chrono::Utc::now().timestamp_millis();
     assign_interval_to_section(
         last_timestamp,
         timestamp,
