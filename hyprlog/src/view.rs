@@ -1,5 +1,5 @@
 use crate::Settings;
-use crate::log_parsing::{MS_PER_DAY, compute_durations, timeline};
+use crate::log_parsing::{compute_durations, timeline};
 use crate::log_reader::LogReader;
 use colored::{Color, Colorize};
 use std::collections::HashMap;
@@ -122,9 +122,7 @@ pub fn render_timeline(
 
 fn choose_character(section_data: (String, i64, i64, bool, bool), settings: &Settings) -> char {
     let width = terminal_width();
-    let ms_per_section = match settings.interval {
-        crate::Interval::Days { days } => (days as i64 * MS_PER_DAY) as f64 / width as f64,
-    };
+    let ms_per_section = (settings.interval.width() / (width as u64)) as f64;
     let fullness = section_data.2 as f64 / ms_per_section as f64;
     if FANCY_TIMELINE {
         if section_data.3 && section_data.4 {

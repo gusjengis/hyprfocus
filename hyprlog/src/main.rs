@@ -1,12 +1,14 @@
 mod daemon_commands;
+mod interval;
 mod log_parsing;
 mod log_reader;
 mod view;
 
-use chrono::{TimeDelta, Utc};
 use daemon_commands::send_command;
 use std::{collections::HashMap, env};
 use view::render_log;
+
+use crate::interval::Interval;
 
 fn main() {
     // use chrono::Utc;
@@ -114,12 +116,14 @@ impl Settings {
             class_arg: String::from(""),
             interval: Interval::default(),
             class_mappings: HashMap::from([
-                (String::from("Chromium-browser"), String::from("chromium")),
+                // (String::from("Chromium-browser"), String::from("chromium")),
                 (String::from("steam_app_813230"), String::from("steam")),
-                (String::from("Unity"), String::from("unity")),
-                (String::from("Alacritty"), String::from("alacritty")),
-                (String::from("Slack"), String::from("slack")),
-                (String::from("plasticx"), String::from("plastic")),
+                // (String::from("steam_app_2357570"), String::from("Overwatch")),
+                // ( String::from("steam_app_2050650"), String::from("Resident Evil 4"),),
+                // (String::from("Unity"), String::from("unity")),
+                // (String::from("Alacritty"), String::from("alacritty")),
+                // (String::from("Slack"), String::from("slack")),
+                // (String::from("plasticx"), String::from("plastic")),
                 (String::from("gcr-prompter"), String::from("keyring")),
                 (
                     String::from(".blueman-manager-wrapped"),
@@ -131,61 +135,11 @@ impl Settings {
                 ),
                 (String::from("org.gnome.Nautilus"), String::from("nautilus")),
                 (String::from("org.pwmt.zathura"), String::from("zathura")),
-                (
-                    String::from("Xdg-desktop-portal-gtk"),
-                    String::from("xdg-desktop-portal-gtk"),
-                ),
+                // (
+                //     String::from("Xdg-desktop-portal-gtk"),
+                //     String::from("xdg-desktop-portal-gtk"),
+                // ),
             ]),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Interval {
-    //<Tz> {
-    Days { days: u64 },
-    // Dates {
-    //     start: chrono::Date<Tz>,
-    //     end: chrono::Date<Tz>,
-    // },
-    // DateTimes {
-    //     start: chrono::DateTime<Tz>,
-    //     end: chrono::DateTime<Tz>,
-    // },
-    // Timestamps {
-    //     start: u64,
-    //     end: u64,
-    // },
-}
-
-impl Default for Interval {
-    fn default() -> Self {
-        Interval::Days { days: 1 }
-    }
-}
-
-impl Interval {
-    pub fn is_default(&self) -> bool {
-        *self == Self::default()
-    }
-    pub fn set_days(&mut self, value: u64) {
-        match self {
-            Interval::Days { days } => *days = value.max(1),
-        }
-    }
-
-    pub fn date_str(&self) -> String {
-        match *self {
-            Interval::Days { days } => {
-                let end = Utc::now().date_naive();
-                let start = end - TimeDelta::days((days - 1) as i64);
-
-                if days == 1 {
-                    end.format("%Y-%m-%d").to_string()
-                } else {
-                    format!("{} - {}", start.format("%Y-%m-%d"), end.format("%Y-%m-%d"))
-                }
-            }
         }
     }
 }

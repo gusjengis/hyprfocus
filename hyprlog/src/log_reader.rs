@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use chrono::{TimeDelta, Utc};
+use chrono::TimeDelta;
 use csv::{Reader, StringRecord};
 use directories::BaseDirs;
 use std::{
@@ -14,6 +14,7 @@ pub struct LogReader {
     file_idx: usize,           // which file we’re on
     rdr: Option<Reader<File>>, // current csv reader
     last_headers: Option<StringRecord>,
+    interval: Interval,
 }
 
 impl LogReader {
@@ -24,15 +25,17 @@ impl LogReader {
             .join("hyprlog");
 
         create_dir_all(&base_dir).expect("failed to create data directory");
+        // get all files in the interval
+        let start = settings.interval.start.date_naive();
+        let end = settings.interval.end.date_naive();
 
-        let mut files: Vec<PathBuf> = match settings.interval {
-            Interval::Days { days } => {
-                (0..days)
-                    .map(|i| Utc::now().date_naive() - TimeDelta::days((days - 1 - i) as i64)) // oldest→newest
-                    .map(|d| base_dir.join(format!("{}.csv", d.format("%Y-%m-%d"))))
-                    .collect()
-            }
-        };
+        let mut files = Vec::new();
+        let mut current = start;
+
+        while current <= end {
+            files.push(base_dir.join(format!("{}.csv", current.format("%Y-%m-%d"))));
+            current += TimeDelta::days(1);
+        }
 
         // skip non-existent files
         files = files.into_iter().filter(|p| p.exists()).collect();
@@ -42,6 +45,7 @@ impl LogReader {
             file_idx: 0,
             rdr: None,
             last_headers: None,
+            interval: settings.interval.clone(),
         }
     }
 
@@ -111,7 +115,16 @@ impl LogReader {
             let rdr = self.rdr.as_mut().unwrap();
             let mut rec = StringRecord::new();
             match rdr.read_record(&mut rec) {
-                Ok(true) => return Some(Ok(rec)),
+                Ok(true) => {
+                    if self
+                        .interval
+                        .contains_utc_timestamp_millis(rec[0].parse::<u64>().unwrap())
+                    {
+                        return Some(Ok(rec));
+                    } else {
+                        continue;
+                    }
+                }
                 Ok(false) => {
                     // End of this file; move to next file.
                     if let Err(e) = self.advance_file() {

@@ -1,10 +1,6 @@
 use std::{collections::HashMap, error::Error};
 
-use chrono::{Duration, Timelike, Utc};
-
 use crate::{Settings, log_reader::LogReader};
-
-pub const MS_PER_DAY: i64 = 86400000;
 
 pub fn compute_durations(
     reader: &mut LogReader,
@@ -117,22 +113,8 @@ pub fn timeline(
     settings: &Settings,
     label: Option<&String>,
 ) -> Vec<(String, i64, i64, bool, bool)> {
-    let (ms_per_section, starting_ms) = match settings.interval {
-        crate::Interval::Days { days } => (
-            days as i64 * MS_PER_DAY / width as i64,
-            (Utc::now()
-                .with_hour(0)
-                .unwrap()
-                .with_minute(0)
-                .unwrap()
-                .with_second(0)
-                .unwrap()
-                .with_nanosecond(0)
-                .unwrap()
-                - Duration::days(days as i64 - 1))
-            .timestamp_millis(),
-        ),
-    };
+    let ms_per_section = (settings.interval.width() / width as u64) as i64;
+    let starting_ms = settings.interval.start.timestamp_millis();
     let mut sections: Vec<(String, i64, i64, bool, bool)> =
         vec![(String::from(""), 0, 0, false, false); width];
 
