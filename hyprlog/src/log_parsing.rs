@@ -26,6 +26,10 @@ pub fn compute_durations(
             None => class,
         };
 
+        if class.contains("steam_app") {
+            class = title.clone();
+        }
+
         if class == "SYSTEM" {
             match title.as_str() {
                 "boot" => {
@@ -134,6 +138,10 @@ pub fn timeline(
             Some(filtered_class) => filtered_class.clone(),
             None => class,
         };
+
+        if class.contains("steam_app") {
+            class = title.clone();
+        }
 
         if class == "SYSTEM" {
             match title.as_str() {
