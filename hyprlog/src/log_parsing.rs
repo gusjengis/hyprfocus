@@ -1,6 +1,6 @@
 use std::{collections::HashMap, error::Error};
 
-use crate::{Settings, log_reader::LogReader};
+use crate::{log_reader::LogReader, settings::Settings};
 
 pub fn compute_durations(
     reader: &mut LogReader,

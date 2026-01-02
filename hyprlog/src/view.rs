@@ -1,6 +1,6 @@
-use crate::Settings;
 use crate::log_parsing::{compute_durations, timeline};
 use crate::log_reader::LogReader;
+use crate::settings::Settings;
 use colored::{Color, Colorize};
 use std::collections::HashMap;
 use std::fmt::Write;

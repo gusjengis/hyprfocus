@@ -7,7 +7,7 @@ use std::{
     path::PathBuf,
 };
 
-use crate::{Interval, Settings};
+use crate::{Interval, settings::Settings};
 
 pub struct LogReader {
     files: Vec<PathBuf>,       // absolute paths for each day, oldest → newest
