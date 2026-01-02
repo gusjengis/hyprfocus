@@ -117,7 +117,7 @@ impl Settings {
             interval: Interval::default(),
             class_mappings: HashMap::from([
                 // (String::from("Chromium-browser"), String::from("chromium")),
-                (String::from("steam_app_813230"), String::from("steam")),
+                // (String::from("steam_app_813230"), String::from("steam")),
                 // (String::from("steam_app_2357570"), String::from("Overwatch")),
                 // ( String::from("steam_app_2050650"), String::from("Resident Evil 4"),),
                 // (String::from("Unity"), String::from("unity")),

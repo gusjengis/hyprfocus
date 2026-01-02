@@ -27,7 +27,7 @@ pub fn compute_durations(
         };
 
         if class.contains("steam_app") {
-            class = title.clone();
+            class = String::from("steam");
         }
 
         if class == "SYSTEM" {
@@ -140,7 +140,7 @@ pub fn timeline(
         };
 
         if class.contains("steam_app") {
-            class = title.clone();
+            class = String::from("steam");
         }
 
         if class == "SYSTEM" {
