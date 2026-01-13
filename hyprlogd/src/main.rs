@@ -46,7 +46,7 @@ async fn main() -> hyprland::Result<()> {
                 let mut event_listener = AsyncEventListener::new();
 
                 event_listener.add_active_window_changed_handler(
-                    hyprland::async_closure! { move |window_data: Option<WindowEventData>| {
+                    hyprland::prelude::async_closure! { move |window_data: Option<WindowEventData>| {
                         if let Some(ref data) = window_data {
                             let class = data.class.clone();
                             let title = data.title.clone();

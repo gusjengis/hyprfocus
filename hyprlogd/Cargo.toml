@@ -1,13 +1,13 @@
 [package]
 name = "hyprlogd"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "Hyprland focus logger daemon"
 license = "MIT"
 
 [dependencies]
 chrono = "0.4.40"
-hyprland = "0.4.0-beta.1"
+hyprland = "0.4.0-beta.3"
 tokio = { version = "1.44.1",  features = ["full"] }
 directories = "6.0.0"
 notify-rust = "4.11.7"
