@@ -1,3 +1,4 @@
+mod config;
 mod daemon_commands;
 mod interval;
 mod log_parsing;
@@ -8,7 +9,7 @@ use daemon_commands::send_command;
 use std::{collections::HashMap, env};
 use view::render_log;
 
-use crate::interval::Interval;
+use crate::{config::Config, interval::Interval};
 
 fn main() {
     // use chrono::Utc;
@@ -30,7 +31,7 @@ fn main() {
             let mut days = false;
             for arg in args.iter().skip(1) {
                 if class {
-                    settings.class_arg = match settings.class_mappings.get(arg) {
+                    settings.class_arg = match settings.config.class_mappings.get(arg) {
                         Some(filtered_class) => filtered_class.clone(),
                         None => arg.clone(),
                     };
@@ -104,8 +105,8 @@ pub struct Settings {
     pub full: bool,
     pub multi_timeline: bool,
     pub class_arg: String,
-    pub interval: Interval,                      //<Tz>,
-    pub class_mappings: HashMap<String, String>, //<Tz>,
+    pub interval: Interval, //<Tz>,
+    pub config: Config,
 }
 
 impl Settings {
@@ -115,31 +116,7 @@ impl Settings {
             multi_timeline: false,
             class_arg: String::from(""),
             interval: Interval::default(),
-            class_mappings: HashMap::from([
-                // (String::from("Chromium-browser"), String::from("chromium")),
-                // (String::from("steam_app_813230"), String::from("steam")),
-                // (String::from("steam_app_2357570"), String::from("Overwatch")),
-                // ( String::from("steam_app_2050650"), String::from("Resident Evil 4"),),
-                // (String::from("Unity"), String::from("unity")),
-                // (String::from("Alacritty"), String::from("alacritty")),
-                // (String::from("Slack"), String::from("slack")),
-                // (String::from("plasticx"), String::from("plastic")),
-                (String::from("gcr-prompter"), String::from("keyring")),
-                (
-                    String::from(".blueman-manager-wrapped"),
-                    String::from("blueman"),
-                ),
-                (
-                    String::from("com.github.wwmm.easyeffects"),
-                    String::from("easyeffects"),
-                ),
-                (String::from("org.gnome.Nautilus"), String::from("nautilus")),
-                (String::from("org.pwmt.zathura"), String::from("zathura")),
-                // (
-                //     String::from("Xdg-desktop-portal-gtk"),
-                //     String::from("xdg-desktop-portal-gtk"),
-                // ),
-            ]),
+            config: Config::new(),
         }
     }
 }
