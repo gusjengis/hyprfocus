@@ -1,5 +1,5 @@
 # hyprlog
-This is an activity/screen time tracker for hyprland.
+This is an activity/focus logger for hyprland.
 
 This is achieved by using the hyprlogd daemon to record all focus events in a log.  
 The hyprlog CLI will use these logs to generate reports on your activity.
