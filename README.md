@@ -1,5 +1,5 @@
 # hyprlog
-This is an activity/screen time tracker for hyprland.
+This is an activity/focus logger for hyprland.
 
 This is achieved by using the hyprlogd daemon to record all focus events in a log.  
 The hyprlog CLI will use these logs to generate reports on your activity.
@@ -42,3 +42,10 @@ listener {
 }
 ```
 Accurate focus data requires that hyprlog is informed of idle events. Above is an example of how to set that up using hypridle
+
+tmux.conf
+```
+set -g set-titles on
+set -g set-titles-string "#{pane_current_command}"
+```
+Tmux won't expose the current command as a title without this setting. Before setting this, anything done in a tmux session just showed up as "bash" in the terminal emulator(kitty) summary.
