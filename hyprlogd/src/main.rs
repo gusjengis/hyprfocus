@@ -5,8 +5,7 @@ mod socket;
 use std::{env, time::Duration};
 
 use hyprland::event_listener::{AsyncEventListener, WindowEventData};
-use log_writer::{LogMsg, log_error, run_log_writer};
-use mosaic_model::log::Log;
+use log_writer::{log_error, run_log_writer, LogMsg};
 use shutdown::{try_spawn_logind_shutdown_watcher, wait_for_shutdown_signal};
 use socket::start_socket_listener;
 use tokio::sync::mpsc;

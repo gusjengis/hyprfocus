@@ -10,7 +10,7 @@ chrono = "0.4.40"
 hyprland = "0.4.0-beta.3"
 tokio = { version = "1.44.1",  features = ["full"] }
 directories = "6.0.0"
-notify-rust = "4.11.7"
-zbus = { version = "5.9", default-features = false, features = ["tokio"] }
+zbus = { version = "=4.4.0", default-features = false, features = ["tokio"] }
+zvariant = "=4.2.0"
+zvariant_utils = "=2.1.0"
 futures-util = "0.3.31"              
-mosaic-model = "0.1.1"              

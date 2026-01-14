@@ -3,3 +3,4 @@ members = [
     "hyprlog",
     "hyprlogd"
 ]
+resolver = "2"
