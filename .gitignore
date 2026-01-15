@@ -1,4 +1,5 @@
 target/
 aur/src/
 aur/pkg/
+*.tar.gz
 
