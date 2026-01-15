@@ -1,6 +1,6 @@
 use std::{collections::HashMap, error::Error};
 
-use crate::{Settings, log_reader::LogReader};
+use crate::{log_reader::LogReader, Settings};
 
 pub fn compute_durations(
     reader: &mut LogReader,
@@ -21,7 +21,7 @@ pub fn compute_durations(
         let title = record[2].to_string();
 
         // filter classes using hashmap to rename them according to config
-        class = match settings.class_mappings.get(&class) {
+        class = match settings.config.class_mappings.get(&class) {
             Some(filtered_class) => filtered_class.clone(),
             None => class,
         };
@@ -134,7 +134,7 @@ pub fn timeline(
         let title = record[2].to_string();
 
         // filter classes using hashmap to rename them according to config
-        class = match settings.class_mappings.get(&class) {
+        class = match settings.config.class_mappings.get(&class) {
             Some(filtered_class) => filtered_class.clone(),
             None => class,
         };
