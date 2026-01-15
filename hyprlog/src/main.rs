@@ -6,7 +6,7 @@ mod log_reader;
 mod view;
 
 use daemon_commands::send_command;
-use std::{collections::HashMap, env};
+use std::env;
 use view::render_log;
 
 use crate::{config::Config, interval::Interval};
