@@ -2,7 +2,7 @@
 name = "hyprlog"
 version = "0.1.1"
 edition = "2021"
-description = "Hyprland focus logger CLI"
+description = "Hyprland focus/activity logger"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/gusjengis/hyprlog"

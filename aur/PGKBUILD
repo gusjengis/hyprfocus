@@ -1,51 +1,36 @@
-# This is an example PKGBUILD file. Use this as a start to creating your own,
-# and remove these comments. For more information, see 'man PKGBUILD'.
-# NOTE: Please fill out the license field for your package! If it is unknown,
-# then please put 'unknown'.
+# Maintainer: Anthony Green <anthony.j.green@outlook.com>
 
-# Maintainer: Your Name <youremail@domain.com>
-pkgname=NAME
-pkgver=VERSION
+pkgname=hyprlog
+pkgver=0.1.1
 pkgrel=1
-epoch=
-pkgdesc=""
-arch=()
-url=""
-license=('GPL')
-groups=()
-depends=()
-makedepends=()
-checkdepends=()
-optdepends=()
-provides=()
-conflicts=()
-replaces=()
-backup=()
-options=()
-install=
-changelog=
-source=("$pkgname-$pkgver.tar.gz"
-        "$pkgname-$pkgver.patch")
-noextract=()
-md5sums=() #generate with 'makepkg -g'
+pkgdesc="Hyprland focus/activity logger"
+arch=('x86_64' 'aarch64')
+url="https://github.com/gusjengis/hyprlog"
+license=('MIT')
 
-prepare() {
-	cd "$srcdir/$pkgname-$pkgver"
-	patch -p1 -i "$srcdir/$pkgname-$pkgver.patch"
-}
+depends=('gcc-libs' 'hyprland')
+makedepends=('cargo' 'rust')
+
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('REPLACE_WITH_REAL_SHA256')
 
 build() {
-	cd "$pkgname-$pkgver"
-	./configure --prefix=/usr
-	make
+  cd "$srcdir/$pkgname-$pkgver"
+  cargo build --release --locked
 }
 
 check() {
-	cd "$pkgname-$pkgver"
-	make -k check
+  cd "$srcdir/$pkgname-$pkgver"
+  cargo test --locked
 }
 
 package() {
-	cd "$pkgname-$pkgver"
-	make DESTDIR="$pkgdir/" install
+  cd "$srcdir/$pkgname-$pkgver"
+
+  install -Dm755 target/release/hyprlog  "$pkgdir/usr/bin/hyprlog"
+  install -Dm755 target/release/hyprlogd "$pkgdir/usr/bin/hyprlogd"
+
+  if [[ -f LICENSE ]]; then
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  fi
 }
