@@ -44,21 +44,24 @@ async fn main() -> hyprland::Result<()> {
             loop {
                 let mut event_listener = AsyncEventListener::new();
 
-                event_listener.add_active_window_changed_handler(
+                #[allow(deprecated)]
+                {
+                    event_listener.add_active_window_changed_handler(
                     hyprland::prelude::async_closure! { move |window_data: Option<WindowEventData>| {
-                        if let Some(ref data) = window_data {
-                            let class = data.class.clone();
-                            let title = data.title.clone();
+                                if let Some(ref data) = window_data {
+                                    let class = data.class.clone();
+                                    let title = data.title.clone();
 
-                            let _ = sender_handle_static.try_send(LogMsg::Line {
-                                ts: chrono::Utc::now().timestamp_millis(),
-                                class,
-                                title,
-                            });
-                        }
-                    }},
-                );
-
+                                    let _ = sender_handle_static.try_send(LogMsg::Line {
+                                        ts: chrono::Utc::now().timestamp_millis(),
+                                        class,
+                                        title,
+                                    });
+                                }
+                            }
+                        },
+                    );
+                }
                 if let Err(e) = event_listener.start_listener_async().await {
                     let ts = chrono::Utc::now().timestamp_millis();
                     log_error(format!("{ts}, [hypr] listener ended: {e}; retrying in 1s")); // output to file
@@ -84,7 +87,7 @@ async fn main() -> hyprland::Result<()> {
 
     // Listen to logind for shutdown signal, this gives enough time to reliably log shutdowns
     if let Some(jhandle) = try_spawn_logind_shutdown_watcher(sender_handle.clone()).await {
-        jhandle.await;
+        let _ = jhandle.await;
     } else {
         // As a fallback for systems that don't have systemd, listen for the signals that come
         // during shutdown. This only works half the time in my testing. If someone who isn't on
