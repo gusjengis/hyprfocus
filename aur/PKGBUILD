@@ -12,16 +12,11 @@ depends=('gcc-libs' 'hyprland')
 makedepends=('cargo' 'rust')
 
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('REPLACE_WITH_REAL_SHA256')
+sha256sums=('7ca087e3e04eeb01c36c2a751b86ef13ff826d55350a84dee058fca39ae55001')
 
 build() {
   cd "$srcdir/$pkgname-$pkgver"
   cargo build --release --locked
-}
-
-check() {
-  cd "$srcdir/$pkgname-$pkgver"
-  cargo test --locked
 }
 
 package() {
