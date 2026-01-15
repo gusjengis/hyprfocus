@@ -600,17 +600,9 @@ dependencies = [
  "colored",
  "csv",
  "directories",
- "terminal_size",
-]
-
-[[package]]
-name = "hyprlogd"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "directories",
  "futures-util",
  "hyprland",
+ "terminal_size",
  "tokio",
  "zbus",
  "zvariant",

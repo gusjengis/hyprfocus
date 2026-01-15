@@ -1,6 +1,38 @@
-[workspace]
-members = [
-    "hyprlog",
-    "hyprlogd"
-]
-resolver = "2"
+[package]
+name = "hyprlog"
+version = "0.1.0"
+edition = "2021"
+description = "Hyprland focus logger CLI"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/gusjengis/hyprlog"
+homepage = "https://github.com/gusjengis/hyprlog"
+keywords = ["hyprland", "wayland", "time-tracking", "logging"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "hyprlog"
+path = "src/hyprlog/main.rs"
+
+[[bin]]
+name = "hyprlogd"
+path = "src/hyprlogd/main.rs"
+
+[dependencies]
+# shared
+chrono = "0.4.40"
+directories = "6.0.0"
+
+# hyprlog
+anyhow = "1.0.98"
+colored = "2.2.0"
+csv = "1.3.1"
+terminal_size = "0.4.2"
+
+# hyprlogd
+hyprland = "0.4.0-beta.3"
+tokio = { version = "1.44.1",  features = ["full"] }
+zbus = { version = "=4.4.0", default-features = false, features = ["tokio"] }
+zvariant = "=4.2.0"
+zvariant_utils = "=2.1.0"
+futures-util = "0.3.31"              
