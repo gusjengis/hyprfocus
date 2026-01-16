@@ -9,20 +9,19 @@ url="https://github.com/gusjengis/hyprlog"
 license=('MIT')
 
 depends=('gcc-libs' 'hyprland')
-makedepends=('cargo' 'rust')
-options=('!debug')
+makedepends=()
+options=('!strip' '!debug')
 
-source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('82cbe852ce9ba09a5be177b1a9134dab4226a3771e34b860e2e91e13db27f4e0')
+# Pull the correct prebuilt tarball for each arch
+source_x86_64=("$pkgname-v$pkgver-x86_64-unknown-linux-gnu.tar.gz::$url/releases/download/v$pkgver/$pkgname-v$pkgver-x86_64-unknown-linux-gnu.tar.gz")
+source_aarch64=("$pkgname-v$pkgver-aarch64-unknown-linux-gnu.tar.gz::$url/releases/download/v$pkgver/$pkgname-v$pkgver-aarch64-unknown-linux-gnu.tar.gz")
 
-build() {
-  cd "$srcdir/$pkgname-$pkgver"
-  cargo build --release --locked
-}
+sha256sums_x86_64=('0aa43be856d997d68867576c23e9bdd46adf773ebe62495ace8ec6d38590555f')
+sha256sums_aarch64=('99a73c67970031a2861f85a1c7ed3a0b87de0c52ce79b379a0c428ade322fc14')
 
 package() {
-  cd "$srcdir/$pkgname-$pkgver"
-  install -Dm755 target/release/hyprlog  "$pkgdir/usr/bin/hyprlog"
-  install -Dm755 target/release/hyprlogd "$pkgdir/usr/bin/hyprlogd"
-  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  cd "$srcdir"
+  install -Dm755 hyprlog  "$pkgdir/usr/bin/hyprlog"
+  install -Dm755 hyprlogd "$pkgdir/usr/bin/hyprlogd"
+  install -Dm644 LICENSE  "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

@@ -6,12 +6,13 @@ pkgbase = hyprlog
 	arch = x86_64
 	arch = aarch64
 	license = MIT
-	makedepends = cargo
-	makedepends = rust
 	depends = gcc-libs
 	depends = hyprland
+	options = !strip
 	options = !debug
-	source = hyprlog-0.1.1.tar.gz::https://github.com/gusjengis/hyprlog/archive/refs/tags/v0.1.1.tar.gz
-	sha256sums = 1eb1bd752f8ac6baded635f66df7b7f40ba586c017d3cf42b8caf3f9cf537eb0
+	source_x86_64 = hyprlog-v0.1.1-x86_64-unknown-linux-gnu.tar.gz::https://github.com/gusjengis/hyprlog/releases/download/v0.1.1/hyprlog-v0.1.1-x86_64-unknown-linux-gnu.tar.gz
+	sha256sums_x86_64 = 0aa43be856d997d68867576c23e9bdd46adf773ebe62495ace8ec6d38590555f
+	source_aarch64 = hyprlog-v0.1.1-aarch64-unknown-linux-gnu.tar.gz::https://github.com/gusjengis/hyprlog/releases/download/v0.1.1/hyprlog-v0.1.1-aarch64-unknown-linux-gnu.tar.gz
+	sha256sums_aarch64 = 99a73c67970031a2861f85a1c7ed3a0b87de0c52ce79b379a0c428ade322fc14
 
 pkgname = hyprlog
