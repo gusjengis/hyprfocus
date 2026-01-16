@@ -10,7 +10,7 @@ license=('MIT')
 
 depends=('gcc-libs' 'hyprland')
 makedepends=('cargo' 'rust')
-optdepends=()
+options=('!debug')
 
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('1eb1bd752f8ac6baded635f66df7b7f40ba586c017d3cf42b8caf3f9cf537eb0')
