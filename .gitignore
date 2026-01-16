@@ -1,1 +1,6 @@
 target/
+AUR/src/
+AUR/pkg/
+*.tar.gz
+*.pkg.tar.zst
+
