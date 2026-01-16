@@ -1,6 +1,6 @@
 target/
-aur/src/
-aur/pkg/
+AUR/src/
+AUR/pkg/
 *.tar.gz
 *.pkg.tar.zst
 
