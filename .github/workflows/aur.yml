@@ -1,0 +1,100 @@
+name: Update AUR
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  aur:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute version + checksums and update PKGBUILD
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Fail fast if layout is wrong
+          test -f AUR/PKGBUILD
+
+          # Expect tags like v0.1.2
+          ver="${GITHUB_REF_NAME#v}"
+          echo "Release tag: ${GITHUB_REF_NAME} -> pkgver=${ver}"
+
+          url="https://github.com/gusjengis/hyprlog"
+
+          x64_file="hyprlog-v${ver}-x86_64-unknown-linux-gnu.tar.gz"
+          arm_file="hyprlog-v${ver}-aarch64-unknown-linux-gnu.tar.gz"
+
+          curl -L -o "${x64_file}" "${url}/releases/download/v${ver}/${x64_file}"
+          curl -L -o "${arm_file}" "${url}/releases/download/v${ver}/${arm_file}"
+
+          x64_sha="$(sha256sum "${x64_file}" | awk '{print $1}')"
+          arm_sha="$(sha256sum "${arm_file}" | awk '{print $1}')"
+
+          echo "x86_64 sha256: ${x64_sha}"
+          echo "aarch64 sha256: ${arm_sha}"
+
+          sed -i -E "s/^pkgver=.*/pkgver=${ver}/" AUR/PKGBUILD
+          sed -i -E "s/^sha256sums_x86_64=.*/sha256sums_x86_64=('${x64_sha}')/" AUR/PKGBUILD
+          sed -i -E "s/^sha256sums_aarch64=.*/sha256sums_aarch64=('${arm_sha}')/" AUR/PKGBUILD
+
+      - name: Generate .SRCINFO
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pacman-package-manager
+
+          cd AUR
+          makepkg --printsrcinfo > .SRCINFO
+
+      - name: Commit AUR metadata back to GitHub repo
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add AUR/PKGBUILD AUR/.SRCINFO
+
+          if git diff --cached --quiet; then
+            echo "No local AUR changes to commit."
+            exit 0
+          fi
+
+          git commit -m "AUR: update to ${GITHUB_REF_NAME}"
+          git push
+
+      - name: Push to AUR
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H aur.archlinux.org >> ~/.ssh/known_hosts
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          rm -rf aurrepo
+          git clone ssh://aur@aur.archlinux.org/hyprlog.git aurrepo
+
+          cp AUR/PKGBUILD AUR/.SRCINFO aurrepo/
+
+          cd aurrepo
+          git add PKGBUILD .SRCINFO
+
+          if git diff --cached --quiet; then
+            echo "No AUR changes to push."
+            exit 0
+          fi
+
+          git commit -m "Update to ${GITHUB_REF_NAME}"
+          git push
