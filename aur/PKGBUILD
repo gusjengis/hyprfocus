@@ -10,6 +10,7 @@ license=('MIT')
 
 depends=('gcc-libs' 'hyprland')
 makedepends=('cargo' 'rust')
+optdepends=()
 
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('1eb1bd752f8ac6baded635f66df7b7f40ba586c017d3cf42b8caf3f9cf537eb0')
@@ -21,11 +22,7 @@ build() {
 
 package() {
   cd "$srcdir/$pkgname-$pkgver"
-
   install -Dm755 target/release/hyprlog  "$pkgdir/usr/bin/hyprlog"
   install -Dm755 target/release/hyprlogd "$pkgdir/usr/bin/hyprlogd"
-
-  if [[ -f LICENSE ]]; then
-    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-  fi
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }
