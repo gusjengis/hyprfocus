@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Install aarch64 linker
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Build (release)
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+     
+      - name: Package
+        run: |
+          version="${GITHUB_REF_NAME}"   # e.g. v0.1.2
+          target="${{ matrix.target }}"
+          target_dir="target/${target}/release"
+          out_dir="dist"
+          pkg="hyprlog-${version}-${target}.tar.gz"
+
+          mkdir -p "${out_dir}"
+
+          # Fail early if the files aren't where we expect
+          test -f "${target_dir}/hyprlog"
+          test -f "${target_dir}/hyprlogd"
+          test -f "LICENSE"
+
+          # Put both binaries + LICENSE in one tarball
+          tar -czf "${out_dir}/${pkg}" \
+            -C "${target_dir}" hyprlog hyprlogd \
+            -C "${GITHUB_WORKSPACE}" LICENSE
+
+
+      - name: Upload artifacts (per target)
+        uses: actions/upload-artifact@v4
+        with:
+          name: hyprlog-${{ matrix.target }}
+          path: |
+            dist/*.tar.gz
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist_all
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p dist
+          find dist_all -type f -maxdepth 4 -print -exec cp {} dist/ \;
+
+      - name: Create GitHub Release + upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+          generate_release_notes: true
