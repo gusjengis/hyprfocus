@@ -10,6 +10,7 @@ pkgbase = hyprlog
 	makedepends = rust
 	depends = gcc-libs
 	depends = hyprland
+	options = !debug
 	source = hyprlog-0.1.1.tar.gz::https://github.com/gusjengis/hyprlog/archive/refs/tags/v0.1.1.tar.gz
 	sha256sums = 1eb1bd752f8ac6baded635f66df7b7f40ba586c017d3cf42b8caf3f9cf537eb0
 
