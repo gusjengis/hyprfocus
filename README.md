@@ -26,11 +26,23 @@ Usage: hyprlog
 [ --idle | --resume]  
 
 ## Installation
-Install the hyprlog CLI and hyprlog daemon with cargo.
+Install the hyprlog CLI and hyprlog daemon with from crates.io, the AUR, nixpkgs, or manually from the releases page.
+
+### Arch
+'''bash
+yay -S hyprlog
+'''
+### Nix/NixOS
+'''bash
+home.packages = [ pkgs.hyprlog ];
+or 
+system.packages = [ pkgs.hyprlog ];
+'''
+
+### Other
 '''bash
 cargo install hyprlog
 '''
-
 
 Add the hyprlogd daemon to the AUTOSTART section of your hyprland config, otherwise no data will be collected and this is useless.
 
